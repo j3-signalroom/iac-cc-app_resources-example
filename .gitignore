@@ -1,0 +1,104 @@
+# ==========================================
+# IDE - VS Code
+# ==========================================
+.vscode/
+*.code-workspace
+
+# ==========================================
+# macOS
+# ==========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+scratch.pad
+
+# ==========================================
+# Terraform
+# ==========================================
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files, which might contain sensitive data
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+
+# IMPORTANT: Secrets files (NEVER COMMIT)
+**/secrets.tfvars
+**/secrets.auto.tfvars
+
+# Ignore override files as they are usually used for local development
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+tfplan
+tfplan.*
+
+# ==========================================
+# AWS & Cloud
+# ==========================================
+.aws/
+*.pem
+*.key
+
+# ==========================================
+# Secrets & Credentials (CRITICAL)
+# ==========================================
+# NEVER COMMIT THESE FILES
+secrets/
+secret.*
+*.secret
+.env
+.env.*
+*.credentials
+credentials.*
+apikeys.*
+*.apikey
+config/secrets/
+config/credentials/
+
+# Confluent Cloud credentials
+confluent.properties
+.confluent/
+**/confluent-cloud-api-key*
+
+# SSH keys
+id_rsa
+id_rsa.pub
+id_dsa
+id_dsa.pub
+id_ecdsa
+id_ecdsa.pub
+id_ed25519
+id_ed25519.pub
+
+# ==========================================
+# CI/CD
+# ==========================================
+.github/secrets/
+
