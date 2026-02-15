@@ -30,13 +30,13 @@ module "sandbox_cluster_linking_app_manager_api_key" {
   }
 
   # Optional Input(s)
-  key_display_name             = "Confluent Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
+  key_display_name             = "Sandbox Cluster Linking App Manager Service Account API Key - {date} - Managed by Terraform Cloud"
   number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
   day_count                    = var.day_count
   disable_wait_for_ready       = true
 
   depends_on = [ 
-    data.confluent_kafka_cluster.sandbox_cluster
+    confluent_service_account.sandbox_cluster_linking_app_manager
   ]
 }
 
@@ -72,13 +72,13 @@ module "shared_cluster_linking_app_manager_api_key" {
   }
 
   # Optional Input(s)
-  key_display_name             = "Confluent Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
+  key_display_name             = "Shared Cluster Linking App Manager Service Account API Key - {date} - Managed by Terraform Cloud"
   number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
   day_count                    = var.day_count
   disable_wait_for_ready       = true
 
   depends_on = [ 
-    data.confluent_kafka_cluster.shared_cluster
+    confluent_service_account.shared_cluster_linking_app_manager
   ]
 }
 
@@ -104,6 +104,8 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   }
 
   depends_on = [
+    module.sandbox_cluster_linking_app_manager_api_key,
+    module.shared_cluster_linking_app_manager_api_key,
     confluent_kafka_topic.source_stock_trades,
     confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics,
     confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster,
@@ -116,7 +118,7 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   ]
 }
 
-# Reverse link: Shared -> Sandbox (required for bidirectional mode)
+# Reverse link: Shared -> Sandbox (required for bidir ectional mode)
 resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   link_name = "bidirectional_between_sandbox_and_shared"
   link_mode = "BIDIRECTIONAL"
@@ -140,6 +142,9 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   }
 
   depends_on = [
+    module.sandbox_cluster_linking_app_manager_api_key,
+    module.shared_cluster_linking_app_manager_api_key,
+    time_sleep.wait_for_cluster_linking,
     confluent_cluster_link.sandbox_and_shared_outbound
   ]
 }
@@ -172,6 +177,21 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   }
 
   depends_on = [
+    module.shared_cluster_linking_app_manager_api_key,
+    confluent_cluster_link.sandbox_and_shared_inbound,
     time_sleep.wait_for_cluster_linking
   ]
 }
+
+## Get all cluster links via REST
+# curl -s -u "<API_KEY>:<API_SECRET>" \
+#   https://<CLUSTER_ID>.<AWS_REGION>.aws.private.confluent.cloud:443/kafka/v3/clusters/<CLUSTER_ID>/links \
+#   | python3 -m json.tool
+
+## If you have the link name, you can use it to delete the link:
+# curl -s -u "<API_KEY>:<API_SECRET>" -X DELETE \
+#   https://<CLUSTER_ID>.<AWS_REGION>.aws.private.confluent.cloud:443/kafka/v3/clusters/<CLUSTER_ID>/links/<LINK_NAME>
+
+## If you have the link UUID, you can use it to delete the link:
+# curl -s -u "<API_KEY>:<API_SECRET>" -X DELETE \
+#   "https://<CLUSTER_ID>.<AWS_REGION>.aws.private.confluent.cloud:443/kafka/v3/clusters/<CLUSTER_ID>/links/<LINK_UUID>?force=true"

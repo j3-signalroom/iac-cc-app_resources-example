@@ -622,51 +622,75 @@ The deploy.sh script handles authentication and Terraform execution:
 #### **3.1.1 Handling DNS Resolution Errors**
 
 ```bash
- Error: error waiting for Kafka API Key "RB6CW7DDJ3HYNUI6" to sync: error listing Kafka Topics using Kafka API Key "RB6CW7DDJ3HYNUI6": Get "https://lkc-n7mqqz.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-n7mqqz/topics": dial tcp: lookup lkc-n7mqqz.us-east-1.aws.private.confluent.cloud: no such host; could not parse error details; raw response body: "{\n  \"api_version\": \"iam/v2\",\n  \"id\": \"RB6CW7DDJ3HYNUI6\",\n  \"kind\": \"ApiKey\",\n  \"metadata\": {\n    \"created_at\": \"2026-02-08T14:02:22.665165Z\",\n    \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-yojdd6k/api-key=RB6CW7DDJ3HYNUI6\",\n    \"self\": \"https://api.confluent.cloud/iam/v2/api-keys/RB6CW7DDJ3HYNUI6\",\n    \"updated_at\": \"2026-02-08T14:02:22.665165Z\"\n  },\n  \"spec\": {\n    \"description\": \"Creation of the Confluent Resource API Key managed by Terraform Cloud using Confluent API Key Rotation Module\",\n    \"display_name\": \"Confluent Kafka Cluster Service Account API Key - 2026-01-09T14:02:22Z - Managed by Terraform Cloud\",\n    \"owner\": {\n      \"api_version\": \"iam/v2\",\n      \"id\": \"sa-yojdd6k\",\n      \"kind\": \"ServiceAccount\",\n      \"related\": \"https://api.confluent.cloud/iam/v2/service-accounts/sa-yojdd6k\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-yojdd6k\"\n    },\n    \"resource\": {\n      \"api_version\": \"cmk/v2\",\n      \"environment\": \"env-p65kvm\",\n      \"id\": \"lkc-n7mqqz\",\n      \"kind\": \"Cluster\",\n      \"related\": \"https://api.confluent.cloud/cmk/v2/clusters/lkc-n7mqqz\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/kafka=lkc-n7mqqz\"\n    },\n    \"secret\": \"cfltzh+TgPzBiHgOMeP6a1Z14rlnHiLuFW7f0mKU99KKzmMTg+kuFArL+uiEvDBg\"\n  }\n}\n"
+ Error: error creating Kafka Topic: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/topics": net/http: TLS handshake timeout
 │ 
-│   with module.kafka_shared_cluster_app_consumer_api_key.confluent_api_key.resouce_api_key[1],
-│   on .terraform/modules/kafka_shared_cluster_app_consumer_api_key/confluent-resources.tf line 3, in resource "confluent_api_key" "resouce_api_key":
-│    3: resource "confluent_api_key" "resouce_api_key" {
-│ 
-╵
-╷
-│ Error: error waiting for Kafka API Key "TJFWEOVQQ2FQTV4H" to sync: error listing Kafka Topics using Kafka API Key "TJFWEOVQQ2FQTV4H": Get "https://lkc-n7mqqz.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-n7mqqz/topics": dial tcp: lookup lkc-n7mqqz.us-east-1.aws.private.confluent.cloud: no such host; could not parse error details; raw response body: "{\n  \"api_version\": \"iam/v2\",\n  \"id\": \"TJFWEOVQQ2FQTV4H\",\n  \"kind\": \"ApiKey\",\n  \"metadata\": {\n    \"created_at\": \"2026-02-08T14:02:22.664929Z\",\n    \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-yojdd6k/api-key=TJFWEOVQQ2FQTV4H\",\n    \"self\": \"https://api.confluent.cloud/iam/v2/api-keys/TJFWEOVQQ2FQTV4H\",\n    \"updated_at\": \"2026-02-08T14:02:22.664929Z\"\n  },\n  \"spec\": {\n    \"description\": \"Creation of the Confluent Resource API Key managed by Terraform Cloud using Confluent API Key Rotation Module\",\n    \"display_name\": \"Confluent Kafka Cluster Service Account API Key - 2026-02-08T14:02:22Z - Managed by Terraform Cloud\",\n    \"owner\": {\n      \"api_version\": \"iam/v2\",\n      \"id\": \"sa-yojdd6k\",\n      \"kind\": \"ServiceAccount\",\n      \"related\": \"https://api.confluent.cloud/iam/v2/service-accounts/sa-yojdd6k\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-yojdd6k\"\n    },\n    \"resource\": {\n      \"api_version\": \"cmk/v2\",\n      \"environment\": \"env-p65kvm\",\n      \"id\": \"lkc-n7mqqz\",\n      \"kind\": \"Cluster\",\n      \"related\": \"https://api.confluent.cloud/cmk/v2/clusters/lkc-n7mqqz\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/kafka=lkc-n7mqqz\"\n    },\n    \"secret\": \"cfltOxVSwPpkZgfv8xfyryvglHiUPqKfAxkQr2/tVkCfr7ZUjGiQBojPreyGd5BA\"\n  }\n}\n"
-│ 
-│   with module.kafka_shared_cluster_app_consumer_api_key.confluent_api_key.resouce_api_key[0],
-│   on .terraform/modules/kafka_shared_cluster_app_consumer_api_key/confluent-resources.tf line 3, in resource "confluent_api_key" "resouce_api_key":
-│    3: resource "confluent_api_key" "resouce_api_key" {
+│   with confluent_kafka_topic.source_stock_trades,
+│   on setup-confluent-kafka-sandbox_cluster.tf line 50, in resource "confluent_kafka_topic" "source_stock_trades":
+│   50: resource "confluent_kafka_topic" "source_stock_trades" {
 │ 
 ╵
 ╷
-│ Error: error waiting for Kafka API Key "OFJQO6FM76OKK654" to sync: error listing Kafka Topics using Kafka API Key "OFJQO6FM76OKK654": Get "https://lkc-n7mqqz.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-n7mqqz/topics": dial tcp: lookup lkc-n7mqqz.us-east-1.aws.private.confluent.cloud: no such host; could not parse error details; raw response body: "{\n  \"api_version\": \"iam/v2\",\n  \"id\": \"OFJQO6FM76OKK654\",\n  \"kind\": \"ApiKey\",\n  \"metadata\": {\n    \"created_at\": \"2026-02-08T13:58:13.461582Z\",\n    \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-w7xdd2w/api-key=OFJQO6FM76OKK654\",\n    \"self\": \"https://api.confluent.cloud/iam/v2/api-keys/OFJQO6FM76OKK654\",\n    \"updated_at\": \"2026-02-08T13:58:13.461582Z\"\n  },\n  \"spec\": {\n    \"description\": \"Creation of the Confluent Resource API Key managed by Terraform Cloud using Confluent API Key Rotation Module\",\n    \"display_name\": \"Confluent Kafka Cluster Service Account API Key - 2026-02-08T13:58:05Z - Managed by Terraform Cloud\",\n    \"owner\": {\n      \"api_version\": \"iam/v2\",\n      \"id\": \"sa-w7xdd2w\",\n      \"kind\": \"ServiceAccount\",\n      \"related\": \"https://api.confluent.cloud/iam/v2/service-accounts/sa-w7xdd2w\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-w7xdd2w\"\n    },\n    \"resource\": {\n      \"api_version\": \"cmk/v2\",\n      \"environment\": \"env-p65kvm\",\n      \"id\": \"lkc-n7mqqz\",\n      \"kind\": \"Cluster\",\n      \"related\": \"https://api.confluent.cloud/cmk/v2/clusters/lkc-n7mqqz\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/kafka=lkc-n7mqqz\"\n    },\n    \"secret\": \"cflti0/MPg3JQYUzvkxYrTBfZMmaHEPxeQHMh5egF4SwTPWGo6VccjDBBMC1adVw\"\n  }\n}\n"
+│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
 │ 
-│   with module.kafka_shared_cluster_app_manager_api_key.confluent_api_key.resouce_api_key[0],
-│   on .terraform/modules/kafka_shared_cluster_app_manager_api_key/confluent-resources.tf line 3, in resource "confluent_api_key" "resouce_api_key":
-│    3: resource "confluent_api_key" "resouce_api_key" {
-│ 
-╵
-╷
-│ Error: error waiting for Kafka API Key "BJUEQB2MW55ZMNYQ" to sync: error listing Kafka Topics using Kafka API Key "BJUEQB2MW55ZMNYQ": Get "https://lkc-n7mqqz.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-n7mqqz/topics": dial tcp: lookup lkc-n7mqqz.us-east-1.aws.private.confluent.cloud: no such host; could not parse error details; raw response body: "{\n  \"api_version\": \"iam/v2\",\n  \"id\": \"BJUEQB2MW55ZMNYQ\",\n  \"kind\": \"ApiKey\",\n  \"metadata\": {\n    \"created_at\": \"2026-02-08T13:58:15.299866Z\",\n    \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-w7xdd2w/api-key=BJUEQB2MW55ZMNYQ\",\n    \"self\": \"https://api.confluent.cloud/iam/v2/api-keys/BJUEQB2MW55ZMNYQ\",\n    \"updated_at\": \"2026-02-08T13:58:15.299866Z\"\n  },\n  \"spec\": {\n    \"description\": \"Creation of the Confluent Resource API Key managed by Terraform Cloud using Confluent API Key Rotation Module\",\n    \"display_name\": \"Confluent Kafka Cluster Service Account API Key - 2026-01-09T13:58:05Z - Managed by Terraform Cloud\",\n    \"owner\": {\n      \"api_version\": \"iam/v2\",\n      \"id\": \"sa-w7xdd2w\",\n      \"kind\": \"ServiceAccount\",\n      \"related\": \"https://api.confluent.cloud/iam/v2/service-accounts/sa-w7xdd2w\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-w7xdd2w\"\n    },\n    \"resource\": {\n      \"api_version\": \"cmk/v2\",\n      \"environment\": \"env-p65kvm\",\n      \"id\": \"lkc-n7mqqz\",\n      \"kind\": \"Cluster\",\n      \"related\": \"https://api.confluent.cloud/cmk/v2/clusters/lkc-n7mqqz\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/kafka=lkc-n7mqqz\"\n    },\n    \"secret\": \"cfltOMn0fEnfJ5NzWD+GJRRy0czeLROjVWsuwCQeARy4VYmj4yYDyi0/ISkRJNaw\"\n  }\n}\n"
-│ 
-│   with module.kafka_shared_cluster_app_manager_api_key.confluent_api_key.resouce_api_key[1],
-│   on .terraform/modules/kafka_shared_cluster_app_manager_api_key/confluent-resources.tf line 3, in resource "confluent_api_key" "resouce_api_key":
-│    3: resource "confluent_api_key" "resouce_api_key" {
+│   with confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["DESCRIBE"],
+│   on setup-confluent-kafka-sandbox_cluster.tf line 100, in resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls":
+│  100: resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
 │ 
 ╵
 ╷
-│ Error: error waiting for Kafka API Key "XBYWZXLGAOB3G6PB" to sync: error listing Kafka Topics using Kafka API Key "XBYWZXLGAOB3G6PB": Get "https://lkc-n7mqqz.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-n7mqqz/topics": dial tcp: lookup lkc-n7mqqz.us-east-1.aws.private.confluent.cloud: no such host; could not parse error details; raw response body: "{\n  \"api_version\": \"iam/v2\",\n  \"id\": \"XBYWZXLGAOB3G6PB\",\n  \"kind\": \"ApiKey\",\n  \"metadata\": {\n    \"created_at\": \"2026-02-08T14:02:22.668068Z\",\n    \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-mvy99zw/api-key=XBYWZXLGAOB3G6PB\",\n    \"self\": \"https://api.confluent.cloud/iam/v2/api-keys/XBYWZXLGAOB3G6PB\",\n    \"updated_at\": \"2026-02-08T14:02:22.668068Z\"\n  },\n  \"spec\": {\n    \"description\": \"Creation of the Confluent Resource API Key managed by Terraform Cloud using Confluent API Key Rotation Module\",\n    \"display_name\": \"Confluent Kafka Cluster Service Account API Key - 2026-02-08T14:02:22Z - Managed by Terraform Cloud\",\n    \"owner\": {\n      \"api_version\": \"iam/v2\",\n      \"id\": \"sa-mvy99zw\",\n      \"kind\": \"ServiceAccount\",\n      \"related\": \"https://api.confluent.cloud/iam/v2/service-accounts/sa-mvy99zw\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-mvy99zw\"\n    },\n    \"resource\": {\n      \"api_version\": \"cmk/v2\",\n      \"environment\": \"env-p65kvm\",\n      \"id\": \"lkc-n7mqqz\",\n      \"kind\": \"Cluster\",\n      \"related\": \"https://api.confluent.cloud/cmk/v2/clusters/lkc-n7mqqz\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/kafka=lkc-n7mqqz\"\n    },\n    \"secret\": \"cflt54APxaocyRyXVN/UwB7iXEKqeVbRE3mYrWXxMlgDd8EeQsaG52eJ31hgt9sw\"\n  }\n}\n"
+│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
 │ 
-│   with module.shared_cluster_linking_app_manager_api_key.confluent_api_key.resouce_api_key[0],
-│   on .terraform/modules/shared_cluster_linking_app_manager_api_key/confluent-resources.tf line 3, in resource "confluent_api_key" "resouce_api_key":
-│    3: resource "confluent_api_key" "resouce_api_key" {
+│   with confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["WRITE"],
+│   on setup-confluent-kafka-sandbox_cluster.tf line 100, in resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls":
+│  100: resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
 │ 
 ╵
 ╷
-│ Error: error waiting for Kafka API Key "B2F4JUVQYPTDEG73" to sync: error listing Kafka Topics using Kafka API Key "B2F4JUVQYPTDEG73": Get "https://lkc-n7mqqz.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-n7mqqz/topics": dial tcp: lookup lkc-n7mqqz.us-east-1.aws.private.confluent.cloud: no such host; could not parse error details; raw response body: "{\n  \"api_version\": \"iam/v2\",\n  \"id\": \"B2F4JUVQYPTDEG73\",\n  \"kind\": \"ApiKey\",\n  \"metadata\": {\n    \"created_at\": \"2026-02-08T14:02:22.596928Z\",\n    \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-mvy99zw/api-key=B2F4JUVQYPTDEG73\",\n    \"self\": \"https://api.confluent.cloud/iam/v2/api-keys/B2F4JUVQYPTDEG73\",\n    \"updated_at\": \"2026-02-08T14:02:22.596928Z\"\n  },\n  \"spec\": {\n    \"description\": \"Creation of the Confluent Resource API Key managed by Terraform Cloud using Confluent API Key Rotation Module\",\n    \"display_name\": \"Confluent Kafka Cluster Service Account API Key - 2026-01-09T14:02:22Z - Managed by Terraform Cloud\",\n    \"owner\": {\n      \"api_version\": \"iam/v2\",\n      \"id\": \"sa-mvy99zw\",\n      \"kind\": \"ServiceAccount\",\n      \"related\": \"https://api.confluent.cloud/iam/v2/service-accounts/sa-mvy99zw\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/service-account=sa-mvy99zw\"\n    },\n    \"resource\": {\n      \"api_version\": \"cmk/v2\",\n      \"environment\": \"env-p65kvm\",\n      \"id\": \"lkc-n7mqqz\",\n      \"kind\": \"Cluster\",\n      \"related\": \"https://api.confluent.cloud/cmk/v2/clusters/lkc-n7mqqz\",\n      \"resource_name\": \"crn://api.confluent.cloud/organization=bd545cc3-8e7c-4387-b6d8-b6d1497a9df7/kafka=lkc-n7mqqz\"\n    },\n    \"secret\": \"cfltWVbR/pKImWxW9vdipZ9OM5WNP1KE4mtL3+tJHJMGAeCH1wFpFcImpvS4pTqg\"\n  }\n}\n"
+│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
 │ 
-│   with module.shared_cluster_linking_app_manager_api_key.confluent_api_key.resouce_api_key[1],
-│   on .terraform/modules/shared_cluster_linking_app_manager_api_key/confluent-resources.tf line 3, in resource "confluent_api_key" "resouce_api_key":
-│    3: resource "confluent_api_key" "resouce_api_key" {
+│   with confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["READ"],
+│   on setup-confluent-kafka-sandbox_cluster.tf line 100, in resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls":
+│  100: resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
+│ 
+╵
+╷
+│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
+│ 
+│   with confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_group,
+│   on setup-confluent-kafka-sandbox_cluster.tf line 162, in resource "confluent_kafka_acl" "sandbox_cluster_app_consumer_read_on_group":
+│  162: resource "confluent_kafka_acl" "sandbox_cluster_app_consumer_read_on_group" {
+│ 
+╵
+╷
+│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
+│ 
+│   with confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster,
+│   on setup-confluent-kafka-sandbox_cluster.tf line 211, in resource "confluent_kafka_acl" "sandbox_cluster_app_connector_describe_on_cluster":
+│  211: resource "confluent_kafka_acl" "sandbox_cluster_app_connector_describe_on_cluster" {
+│ 
+╵
+╷
+│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
+│ 
+│   with confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics,
+│   on setup-confluent-kafka-sandbox_cluster.tf line 255, in resource "confluent_kafka_acl" "sandbox_cluster_app_connector_create_on_data_preview_topics":
+│  255: resource "confluent_kafka_acl" "sandbox_cluster_app_connector_create_on_data_preview_topics" {
+│ 
+╵
+╷
+│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
+│ 
+│   with confluent_kafka_acl.sandbox_cluster_app_connector_write_on_data_preview_topics,
+│   on setup-confluent-kafka-sandbox_cluster.tf line 277, in resource "confluent_kafka_acl" "sandbox_cluster_app_connector_write_on_data_preview_topics":
+│  277: resource "confluent_kafka_acl" "sandbox_cluster_app_connector_write_on_data_preview_topics" {
+│ 
+╵
+╷
+│ Error: error creating Kafka ACLs: Post "https://lkc-7vvj61.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-7vvj61/acls": net/http: TLS handshake timeout
+│ 
+│   with confluent_kafka_acl.shared_cluster_app_consumer_read_on_group,
+│   on setup-confluent-kafka-shared_cluster.tf line 85, in resource "confluent_kafka_acl" "shared_cluster_app_consumer_read_on_group":
+│   85: resource "confluent_kafka_acl" "shared_cluster_app_consumer_read_on_group" {
 │ 
 ```
 
@@ -675,20 +699,18 @@ If you encounter DNS resolution errors like the ones above during the apply proc
 #### **3.1.2 Cluster Linking Error**
 
 ```bash
-╷
-│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link _fA8DRTZSvGrLkTur7e8-Q already exists.
+│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link LL0WktYVQom94jrrQTIuDg already exists.
 │ 
-│   with confluent_cluster_link.shared_to_sandbox,
-│   on setup-confluent-cluster_linking.tf line 113, in resource "confluent_cluster_link" "shared_to_sandbox":
-│  113: resource "confluent_cluster_link" "shared_to_sandbox" {
+│   with confluent_cluster_link.sandbox_and_shared_inbound,
+│   on setup-confluent-cluster_linking.tf line 122, in resource "confluent_cluster_link" "sandbox_and_shared_inbound":
+│  122: resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
 │ 
-╵
 ```
 
 If you see the above error, it indicates that the previous failed attempt left the cluster link in place. To resolve, delete the existing cluster link via the Confluent CLI:
 
 ```bash
-confluent kafka link delete bidirectional_between_sandbox_and_shared --cluster <SANDBOX_CLUSTER_ID> --environment <NON_PROD_ENV_ID> --force
+confluent kafka link delete bidirectional_between_sandbox_and_shared --cluster lkc-111qr6 --environment env-vk5qqn --force
 ```
 
 Then re-run the `deploy.sh` script with the `create` command.
