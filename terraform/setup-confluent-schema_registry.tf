@@ -27,8 +27,7 @@ resource "confluent_service_account" "src_api" {
 # Create the Environment API Key Pairs, rotate them in accordance to a time schedule, and provide the current
 # acitve API Key Pair to use
 module "src_api_key_rotation" {
-    
-    source  = "github.com/j3-signalroom/iac-confluent-api_key_rotation-tf_module"
+    source  = "github.com/j3-signalroom/iac-confluent-api_key_rotation-tf_module?ref=v0.23.00.000"
 
     # Required Input(s)
     owner = {
@@ -48,9 +47,9 @@ module "src_api_key_rotation" {
     }
     
     # Optional Input(s)
-    key_display_name = "Confluent Schema Registry Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
+    key_display_name             = "Confluent Schema Registry Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
     number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
-    day_count = var.day_count
+    day_count                    = var.day_count
 }
 
 resource "confluent_role_binding" "schema_registry_developer_read_all_subjects" {
