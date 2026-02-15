@@ -10,6 +10,8 @@
 #                                --confluent-api-secret=<CONFLUENT_API_SECRET>
 #                                --tfe-token=<TFE_TOKEN>
 #                                --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID>
+#                                --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> \
+#                                --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID> \
 #                                [--day-count=<DAY_COUNT>]
 #
 #
@@ -47,7 +49,7 @@ TERRAFORM_DIR="$SCRIPT_DIR/terraform"
 
 print_info "Terraform Directory: $TERRAFORM_DIR"
 
-argument_list="--profile=<SSO_PROFILE_NAME> --confluent-api-key=<CONFLUENT_API_KEY> --confluent-api-secret=<CONFLUENT_API_SECRET> --tfe-token=<TFE_TOKEN> --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID>"
+argument_list="--profile=<SSO_PROFILE_NAME> --confluent-api-key=<CONFLUENT_API_KEY> --confluent-api-secret=<CONFLUENT_API_SECRET> --tfe-token=<TFE_TOKEN> --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID>"
 
 # Check required command (create or destroy) was supplied
 case $1 in
@@ -59,7 +61,7 @@ case $1 in
     echo
     print_error "(Error Message 001)  You did not specify one of the commands: create | destroy."
     echo
-    print_error "Usage:  Require all five arguments ---> `basename $0`=<create | destroy> $argument_list"
+    print_error "Usage:  Require all seven arguments ---> `basename $0`=<create | destroy> $argument_list"
     echo
     exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
     ;;
@@ -71,6 +73,8 @@ confluent_api_key=""
 confluent_api_secret=""
 tfe_token=""
 confluent_environment_id=""
+confluent_sandbox_kafka_cluster_id=""
+confluent_shared_kafka_cluster_id=""
 
 # Default optional variable(s)
 day_count=30
@@ -98,6 +102,20 @@ do
         *"--day-count="*)
             arg_length=12
             day_count=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
+        *"--confluent-sandbox-kafka-cluster-id="*)
+            arg_length=37
+            confluent_sandbox_kafka_cluster_id=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
+        *"--confluent-shared-kafka-cluster-id="*)
+            arg_length=36
+            confluent_shared_kafka_cluster_id=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
+        *)
+            echo
+            print_error "(Error Message 002)  You included an invalid argument: $arg"
+            echo
+            print_error "Usage:  Require all seven arguments ---> `basename $0`=<create | destroy> $argument_list"
+            echo
+            exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
+            ;;
     esac
 done
 
@@ -105,9 +123,9 @@ done
 if [ -z "$AWS_PROFILE" ]
 then
     echo
-    print_error "(Error Message 002)  You did not include the proper use of the --profile=<SSO_PROFILE_NAME> argument in the call."
+    print_error "(Error Message 003)  You did not include the proper use of the --profile=<SSO_PROFILE_NAME> argument in the call."
     echo
-    print_error "Usage:  Require all five arguments ---> `basename $0 $1` $argument_list"
+    print_error "Usage:  Require all seven arguments ---> `basename $0 $1` $argument_list"
     echo
     exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
 fi
@@ -116,9 +134,9 @@ fi
 if [ -z "$confluent_api_key" ]
 then
     echo
-    print_error "(Error Message 003)  You did not include the proper use of the --confluent-api-key=<CONFLUENT_API_KEY> argument in the call."
+    print_error "(Error Message 004)  You did not include the proper use of the --confluent-api-key=<CONFLUENT_API_KEY> argument in the call."
     echo
-    print_error "Usage:  Require all five arguments ---> `basename $0 $1` $argument_list"
+    print_error "Usage:  Require all seven arguments ---> `basename $0 $1` $argument_list"
     echo
     exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
 fi
@@ -127,9 +145,9 @@ fi
 if [ -z "$confluent_api_secret" ]
 then
     echo
-    print_error "(Error Message 004)  You did not include the proper use of the --confluent-api-secret=<CONFLUENT_API_SECRET> argument in the call."
+    print_error "(Error Message 005)  You did not include the proper use of the --confluent-api-secret=<CONFLUENT_API_SECRET> argument in the call."
     echo
-    print_error "Usage:  Require all five arguments ---> `basename $0 $1` $argument_list"
+    print_error "Usage:  Require all seven arguments ---> `basename $0 $1` $argument_list"
     echo
     exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
 fi
@@ -138,9 +156,9 @@ fi
 if [ -z "$tfe_token" ]
 then
     echo
-    print_error "(Error Message 005)  You did not include the proper use of the --tfe-token=<TFE_TOKEN> argument in the call."
+    print_error "(Error Message 006)  You did not include the proper use of the --tfe-token=<TFE_TOKEN> argument in the call."
     echo
-    print_error "Usage:  Require all five arguments ---> `basename $0 $1` $argument_list"
+    print_error "Usage:  Require all seven arguments ---> `basename $0 $1` $argument_list"
     echo
     exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
 fi
@@ -149,9 +167,31 @@ fi
 if [ -z "$confluent_environment_id" ]
 then
     echo
-    print_error "(Error Message 006)  You did not include the proper use of the --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> argument in the call."
+    print_error "(Error Message 007)  You did not include the proper use of the --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> argument in the call."
     echo
-    print_error "Usage:  Require all five arguments ---> `basename $0 $1` $argument_list"
+    print_error "Usage:  Require all seven arguments ---> `basename $0 $1` $argument_list"
+    echo
+    exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
+fi
+
+# Check required --confluent-sandbox-kafka-cluster-id argument was supplied
+if [ -z "$confluent_sandbox_kafka_cluster_id" ]
+then
+    echo
+    print_error "(Error Message 008)  You did not include the proper use of the --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> argument in the call."
+    echo
+    print_error "Usage:  Require all seven arguments ---> `basename $0 $1` $argument_list"
+    echo
+    exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
+fi
+
+# Check required --confluent-shared-kafka-cluster-id argument was supplied
+if [ -z "$confluent_shared_kafka_cluster_id" ]
+then
+    echo
+    print_error "(Error Message 009)  You did not include the proper use of the --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID> argument in the call."
+    echo
+    print_error "Usage:  Require all seven arguments ---> `basename $0 $1` $argument_list"
     echo
     exit 85 # Common GNU/Linux Exit Code for 'Interrupted system call should be restarted'
 fi
@@ -182,6 +222,8 @@ deploy_infrastructure() {
     # \nconfluent_api_secret=\"${confluent_api_secret}\"\
     # \nconfluent_secret_root_path=\"${confluent_secret_root_path}\"\
     # \nconfluent_environment_id=\"${confluent_environment_id}\"\
+    # \nconfluent_sandbox_kafka_cluster_id=\"${confluent_sandbox_kafka_cluster_id}\"\
+    # \nconfluent_shared_kafka_cluster_id=\"${confluent_shared_kafka_cluster_id}\"\
     # \ntfe_token=\"${tfe_token}\"\
     # \nday_count=${day_count}\" > terraform.tfvars
 
@@ -194,6 +236,8 @@ deploy_infrastructure() {
     export TF_VAR_confluent_api_secret="${confluent_api_secret}"
     export TF_VAR_confluent_secret_root_path="${confluent_secret_root_path}"
     export TF_VAR_confluent_environment_id="${confluent_environment_id}"
+    export TF_VAR_confluent_sandbox_kafka_cluster_id="${confluent_sandbox_kafka_cluster_id}"
+    export TF_VAR_confluent_shared_kafka_cluster_id="${confluent_shared_kafka_cluster_id}"
     export TF_VAR_tfe_token="${tfe_token}"
     export TF_VAR_day_count="${day_count}"
 
@@ -247,6 +291,8 @@ undeploy_infrastructure() {
     export TF_VAR_confluent_api_secret="${confluent_api_secret}"
     export TF_VAR_confluent_secret_root_path="${confluent_secret_root_path}"
     export TF_VAR_confluent_environment_id="${confluent_environment_id}"
+    export TF_VAR_confluent_sandbox_kafka_cluster_id="${confluent_sandbox_kafka_cluster_id}"
+    export TF_VAR_confluent_shared_kafka_cluster_id="${confluent_shared_kafka_cluster_id}"
     export TF_VAR_tfe_token="${tfe_token}"
     export TF_VAR_day_count="${day_count}"
 

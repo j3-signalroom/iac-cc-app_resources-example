@@ -17,6 +17,16 @@ variable "confluent_environment_id" {
   type        = string
 }
 
+variable "confluent_sandbox_kafka_cluster_id" {
+  description = "The Confluent Cloud Sandbox Kafka Cluster ID where the resources will be created."
+  type        = string
+}
+
+variable "confluent_shared_kafka_cluster_id" {
+  description = "The Confluent Cloud Shared Kafka Cluster ID where the resources will be created."
+  type        = string
+}
+
 # ===================================================
 # AWS PROVIDER CONFIGURATION
 # ===================================================

@@ -10,7 +10,7 @@ resource "confluent_role_binding" "sandbox_cluster_linking_app_manager" {
 }
 
 module "sandbox_cluster_linking_app_manager_api_key" {
-  source = "github.com/j3-signalroom/iac-confluent-api_key_rotation-tf_module"
+  source = "github.com/j3-signalroom/iac-confluent-api_key_rotation-tf_module?ref=v0.23.00.000"
 
   #Required Input(s)
   owner = {
@@ -20,9 +20,9 @@ module "sandbox_cluster_linking_app_manager_api_key" {
   }
 
   resource = {
-    id          = confluent_kafka_cluster.sandbox_cluster.id
-    api_version = confluent_kafka_cluster.sandbox_cluster.api_version
-    kind        = confluent_kafka_cluster.sandbox_cluster.kind
+    id          = data.confluent_kafka_cluster.sandbox_cluster.id
+    api_version = data.confluent_kafka_cluster.sandbox_cluster.api_version
+    kind        = data.confluent_kafka_cluster.sandbox_cluster.kind
 
     environment = {
       id = data.confluent_environment.non_prod.id
@@ -33,9 +33,10 @@ module "sandbox_cluster_linking_app_manager_api_key" {
   key_display_name             = "Confluent Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
   number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
   day_count                    = var.day_count
+  disable_wait_for_ready       = true
 
   depends_on = [ 
-    confluent_kafka_cluster.sandbox_cluster
+    data.confluent_kafka_cluster.sandbox_cluster
   ]
 }
 
@@ -51,7 +52,7 @@ resource "confluent_role_binding" "shared_cluster_linking_app_manager" {
 }
 
 module "shared_cluster_linking_app_manager_api_key" {
-  source = "github.com/j3-signalroom/iac-confluent-api_key_rotation-tf_module"
+  source = "github.com/j3-signalroom/iac-confluent-api_key_rotation-tf_module?ref=v0.23.00.000"
 
   #Required Input(s)
   owner = {
@@ -61,9 +62,9 @@ module "shared_cluster_linking_app_manager_api_key" {
   }
 
   resource = {
-    id          = confluent_kafka_cluster.shared_cluster.id
-    api_version = confluent_kafka_cluster.shared_cluster.api_version
-    kind        = confluent_kafka_cluster.shared_cluster.kind
+    id          = data.confluent_kafka_cluster.shared_cluster.id
+    api_version = data.confluent_kafka_cluster.shared_cluster.api_version
+    kind        = data.confluent_kafka_cluster.shared_cluster.kind
 
     environment = {
       id = data.confluent_environment.non_prod.id
@@ -74,9 +75,10 @@ module "shared_cluster_linking_app_manager_api_key" {
   key_display_name             = "Confluent Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
   number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
   day_count                    = var.day_count
+  disable_wait_for_ready       = true
 
   depends_on = [ 
-    confluent_kafka_cluster.shared_cluster
+    data.confluent_kafka_cluster.shared_cluster
   ]
 }
 
@@ -84,8 +86,8 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   link_name = "bidirectional_between_sandbox_and_shared"
   link_mode = "BIDIRECTIONAL"
   local_kafka_cluster {
-    id            = confluent_kafka_cluster.sandbox_cluster.id
-    rest_endpoint = confluent_kafka_cluster.sandbox_cluster.rest_endpoint
+    id            = data.confluent_kafka_cluster.sandbox_cluster.id
+    rest_endpoint = data.confluent_kafka_cluster.sandbox_cluster.rest_endpoint
     credentials {
       key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -93,8 +95,8 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   }
 
   remote_kafka_cluster {
-    id                 = confluent_kafka_cluster.shared_cluster.id
-    bootstrap_endpoint = confluent_kafka_cluster.shared_cluster.bootstrap_endpoint
+    id                 = data.confluent_kafka_cluster.shared_cluster.id
+    bootstrap_endpoint = data.confluent_kafka_cluster.shared_cluster.bootstrap_endpoint
     credentials {
       key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -102,8 +104,6 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   }
 
   depends_on = [
-    confluent_kafka_cluster.sandbox_cluster,
-    confluent_kafka_cluster.shared_cluster,
     confluent_kafka_topic.source_stock_trades,
     confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics,
     confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster,
@@ -122,8 +122,8 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   link_mode = "BIDIRECTIONAL"
   
   local_kafka_cluster {
-    id            = confluent_kafka_cluster.shared_cluster.id
-    rest_endpoint = confluent_kafka_cluster.shared_cluster.rest_endpoint
+    id            = data.confluent_kafka_cluster.shared_cluster.id
+    rest_endpoint = data.confluent_kafka_cluster.shared_cluster.rest_endpoint
     credentials {
       key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -131,8 +131,8 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   }
 
   remote_kafka_cluster {
-    id                 = confluent_kafka_cluster.sandbox_cluster.id
-    bootstrap_endpoint = confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint
+    id                 = data.confluent_kafka_cluster.sandbox_cluster.id
+    bootstrap_endpoint = data.confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint
     credentials {
       key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -162,8 +162,8 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   }
   
   kafka_cluster {
-    id            = confluent_kafka_cluster.shared_cluster.id
-    rest_endpoint = confluent_kafka_cluster.shared_cluster.rest_endpoint
+    id            = data.confluent_kafka_cluster.shared_cluster.id
+    rest_endpoint = data.confluent_kafka_cluster.shared_cluster.rest_endpoint
 
     credentials {
       key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id

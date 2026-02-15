@@ -20,7 +20,7 @@ resource "aws_secretsmanager_secret" "kafka_sandbox_cluster_app_manager_api_key_
 resource "aws_secretsmanager_secret_version" "kafka_sandbox_cluster_app_manager_api_key_java_client" {
     secret_id     = aws_secretsmanager_secret.kafka_sandbox_cluster_app_manager_api_key_java_client.id
     secret_string = jsonencode({"sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username='${module.kafka_sandbox_cluster_app_manager_api_key.active_api_key.id}' password='${module.kafka_sandbox_cluster_app_manager_api_key.active_api_key.secret}';",
-                                "bootstrap.servers": replace(confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
+                                "bootstrap.servers": replace(data.confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
 }
 
 resource "aws_secretsmanager_secret" "kafka_sandbox_cluster_app_consumer_api_key_java_client" {
@@ -30,7 +30,7 @@ resource "aws_secretsmanager_secret" "kafka_sandbox_cluster_app_consumer_api_key
 resource "aws_secretsmanager_secret_version" "kafka_sandbox_cluster_app_consumer_api_key_java_client" {
     secret_id     = aws_secretsmanager_secret.kafka_sandbox_cluster_app_consumer_api_key_java_client.id
     secret_string = jsonencode({"sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username='${module.kafka_sandbox_cluster_app_consumer_api_key.active_api_key.id}' password='${module.kafka_sandbox_cluster_app_consumer_api_key.active_api_key.secret}';",
-                                "bootstrap.servers": replace(confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
+                                "bootstrap.servers": replace(data.confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
 }
 
 resource "aws_secretsmanager_secret" "kafka_sandbox_cluster_app_producer_api_key_java_client" {
@@ -40,7 +40,7 @@ resource "aws_secretsmanager_secret" "kafka_sandbox_cluster_app_producer_api_key
 resource "aws_secretsmanager_secret_version" "kafka_sandbox_cluster_app_producer_api_key_java_client" {
     secret_id     = aws_secretsmanager_secret.kafka_sandbox_cluster_app_producer_api_key_java_client.id
     secret_string = jsonencode({"sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username='${module.kafka_sandbox_cluster_app_producer_api_key.active_api_key.id}' password='${module.kafka_sandbox_cluster_app_producer_api_key.active_api_key.secret}';",
-                                "bootstrap.servers": replace(confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
+                                "bootstrap.servers": replace(data.confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
 }
 
 resource "aws_secretsmanager_secret" "kafka_shared_cluster_app_manager_api_key_java_client" {
@@ -50,7 +50,7 @@ resource "aws_secretsmanager_secret" "kafka_shared_cluster_app_manager_api_key_j
 resource "aws_secretsmanager_secret_version" "kafka_shared_cluster_app_manager_api_key_java_client" {
     secret_id     = aws_secretsmanager_secret.kafka_shared_cluster_app_manager_api_key_java_client.id
     secret_string = jsonencode({"sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username='${module.kafka_shared_cluster_app_manager_api_key.active_api_key.id}' password='${module.kafka_shared_cluster_app_manager_api_key.active_api_key.secret}';",
-                                "bootstrap.servers": replace(confluent_kafka_cluster.shared_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
+                                "bootstrap.servers": replace(data.confluent_kafka_cluster.shared_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
 }
 
 resource "aws_secretsmanager_secret" "kafka_shared_cluster_app_consumer_api_key_java_client" {
@@ -60,5 +60,5 @@ resource "aws_secretsmanager_secret" "kafka_shared_cluster_app_consumer_api_key_
 resource "aws_secretsmanager_secret_version" "kafka_shared_cluster_app_consumer_api_key_java_client" {
     secret_id     = aws_secretsmanager_secret.kafka_shared_cluster_app_consumer_api_key_java_client.id
     secret_string = jsonencode({"sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username='${module.kafka_shared_cluster_app_consumer_api_key.active_api_key.id}' password='${module.kafka_shared_cluster_app_consumer_api_key.active_api_key.secret}';",
-                                "bootstrap.servers": replace(confluent_kafka_cluster.shared_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
+                                "bootstrap.servers": replace(data.confluent_kafka_cluster.shared_cluster.bootstrap_endpoint, "SASL_SSL://", "")})
 }
