@@ -2,7 +2,7 @@
 
 #
 # *** Purpose ***
-# To create or destroy the infrastructure for the Confluent Cloud Cluster Linking with PrivateLink example.
+# To create or destroy the infrastructure for the Confluent Cloud Cluster Linking example.
 #
 # *** Script Syntax ***
 # ./deploy.sh=<create | destroy> --profile=<SSO_PROFILE_NAME>
@@ -204,7 +204,7 @@ eval $(aws2-wrap $AWS_PROFILE --export)
 export AWS_REGION=$(aws configure get region $AWS_PROFILE)
 
 # Confluent Root Path
-confluent_secret_root_path=/confluent_cloud_resource/iac-cc-aws_privatelink-cluster_linking-example
+confluent_secret_root_path=/confluent_cloud_resource/iac-cc-app_resources-example
 
 # Function to deploy infrastructure
 deploy_infrastructure() {

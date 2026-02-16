@@ -87,7 +87,7 @@ resource "confluent_kafka_acl" "shared_cluster_app_consumer_read_on_group" {
     id = data.confluent_kafka_cluster.shared_cluster.id
   }
   resource_type = "GROUP"
-  resource_name = "shared_aws_privatelink_example_"
+  resource_name = "shared_aws_example_"
   pattern_type  = "LITERAL"
   principal     = "User:${confluent_service_account.shared_cluster_app_consumer.id}"
   host          = "*"
