@@ -91,7 +91,7 @@ resource "time_sleep" "wait_for_cluster_linking_api_key_propagation" {
     module.shared_cluster_linking_app_manager_api_key
   ]
   
-  create_duration = "90s"
+  create_duration = "120s"
 }
 
 resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
@@ -131,7 +131,7 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   ]
 }
 
-# Reverse link: Shared -> Sandbox (required for bidir ectional mode)
+# Reverse link: Shared -> Sandbox (required for bidirectional mode)
 resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   link_name = "bidirectional_between_sandbox_and_shared"
   link_mode = "BIDIRECTIONAL"
