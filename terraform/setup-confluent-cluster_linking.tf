@@ -94,11 +94,9 @@ resource "time_sleep" "wait_for_cluster_linking_api_key_propagation" {
   create_duration = "120s"
 }
 
-# Reverse link: Shared -> Sandbox (required for bidirectional mode)
-resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
+resource "confluent_cluster_link" "sandbox_to_shared" {
   link_name = "bidirectional_between_sandbox_and_shared"
   link_mode = "BIDIRECTIONAL"
-  connection_mode = "INBOUND"
   
   local_kafka_cluster {
     id            = data.confluent_kafka_cluster.shared_cluster.id
@@ -132,18 +130,9 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   ]
 }
 
-resource "time_sleep" "wait_for_inbound_link_propagation" {
-  depends_on = [
-    confluent_cluster_link.sandbox_and_shared_inbound
-  ]
-  
-  create_duration = "60s"
-}
-
-resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
+resource "confluent_cluster_link" "shared_to_sandbox" {
   link_name = "bidirectional_between_sandbox_and_shared"
   link_mode = "BIDIRECTIONAL"
-  connection_mode = "OUTBOUND"
   local_kafka_cluster {
     id            = data.confluent_kafka_cluster.sandbox_cluster.id
     rest_endpoint = data.confluent_kafka_cluster.sandbox_cluster.rest_endpoint
@@ -163,17 +152,8 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   }
 
   depends_on = [
-    time_sleep.wait_for_inbound_link_propagation
+    confluent_cluster_link.sandbox_to_shared
   ]
-}
-
-# Wait for Cluster Link to be active before creating reverse link
-resource "time_sleep" "wait_for_cluster_linking" {
-  depends_on = [
-    confluent_cluster_link.sandbox_and_shared_outbound
-  ]
-  
-  create_duration = "1m"
 }
 
 resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
@@ -181,7 +161,7 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
     topic_name = confluent_kafka_topic.source_stock_trades.topic_name 
   }
   cluster_link {
-    link_name = confluent_cluster_link.sandbox_and_shared_outbound.link_name
+    link_name = confluent_cluster_link.sandbox_to_shared.link_name
   }
   
   kafka_cluster {
@@ -195,7 +175,8 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   }
 
   depends_on = [
-    time_sleep.wait_for_cluster_linking
+    confluent_cluster_link.sandbox_to_shared,
+    confluent_cluster_link.shared_to_sandbox
   ]
 }
 
