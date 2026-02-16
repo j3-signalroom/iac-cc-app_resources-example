@@ -280,9 +280,10 @@ Here's the argument table for `deploy.sh destroy` command:
 If you encounter a Cluster Link deletion error during the destroy process, you may see an error message similar to the following:
 
 ```bash
-│ Error: error deleting Cluster Link "lkc-7vvj61/bidirectional_between_sandbox_and_shared": 401 Unauthorized: Not authorized: the authenticated user didn't have the right access to the resource: Cluster authorization failed.
+│ Error: error deleting Cluster Link "lkc-y07p8j/bidirectional_between_sandbox_and_shared": 404 Not Found; could not parse error details; raw response body: "{\"error_code\":404,\"message\":\"The cluster link doesn't exist: Cluster Link bidirectional_between_sandbox_and_shared does not exist.\"}"
 │ 
 │ 
+╵
 ```
 
 **Navigate to the Terraform directory:**
@@ -295,7 +296,6 @@ cd terraform
 
 ```bash
 terraform state rm 'confluent_cluster_link.sandbox_and_shared_outbound'
-terraform state rm 'confluent_cluster_link.sandbox_and_shared_inbound'
 terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster'
 terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_connector_write_on_target_topic'
 terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics'

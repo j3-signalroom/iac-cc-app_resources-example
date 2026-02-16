@@ -91,7 +91,7 @@ resource "time_sleep" "wait_for_cluster_linking_api_key_propagation" {
     module.shared_cluster_linking_app_manager_api_key
   ]
   
-  create_duration = "90s"
+  create_duration = "120s"
 }
 
 resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
@@ -157,7 +157,6 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   depends_on = [
     module.sandbox_cluster_linking_app_manager_api_key,
     module.shared_cluster_linking_app_manager_api_key,
-    time_sleep.wait_for_cluster_linking_api_key_propagation,
     confluent_cluster_link.sandbox_and_shared_outbound
   ]
 }
@@ -165,7 +164,12 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
 # Wait for Cluster Link to be active before creating reverse link
 resource "time_sleep" "wait_for_cluster_linking" {
   depends_on = [
-    confluent_cluster_link.sandbox_and_shared_outbound
+    confluent_role_binding.sandbox_cluster_linking_app_manager,
+    confluent_role_binding.shared_cluster_linking_app_manager,
+    module.sandbox_cluster_linking_app_manager_api_key,
+    module.shared_cluster_linking_app_manager_api_key,
+    confluent_cluster_link.sandbox_and_shared_outbound,
+    confluent_cluster_link.sandbox_and_shared_inbound
   ]
   
   create_duration = "1m"
@@ -191,7 +195,6 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
 
   depends_on = [
     module.shared_cluster_linking_app_manager_api_key,
-    confluent_cluster_link.sandbox_and_shared_inbound,
     time_sleep.wait_for_cluster_linking
   ]
 }

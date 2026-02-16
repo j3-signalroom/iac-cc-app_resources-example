@@ -247,7 +247,7 @@ deploy_infrastructure() {
 
     # Plan Terraform
     print_info "Running Terraform plan..."
-    terraform plan -out=tfplan -refresh=false > tfplan.out
+    terraform plan -out=tfplan > tfplan.out
     
     # Apply Terraform
     read -p "Do you want to apply this plan? (y/N) " -n 1 -r
@@ -301,7 +301,7 @@ undeploy_infrastructure() {
     
     # Auto approves the destroy plan without prompting, and destroys based on state only, without
     # trying to refresh data sources
-    terraform destroy -auto-approve -refresh=false
+    terraform destroy -auto-approve
 
     # Force the delete of the AWS Secrets
     print_info "Deleting AWS Secrets..."
