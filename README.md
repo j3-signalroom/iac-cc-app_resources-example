@@ -17,8 +17,7 @@ Below is the Terraform resource visualization of the infrastructure that's creat
 - [3.0 What This Workspace Provisions](#30-what-this-workspace-provisions)
 - [4.0 Let's Get Started](#40-lets-get-started)
   - [4.1 Deploy the Infrastructure](#41-deploy-the-infrastructure)
-    - [4.1.1 Handling DNS Resolution Errors](#411-handling-dns-resolution-errors)
-    - [4.1.2 Cluster Linking Error](#412-cluster-linking-error)
+    - [4.1.1 Cluster Linking Error](#411-cluster-linking-error)
   - [4.2 Teardown the Infrastructure](#42-teardown-the-infrastructure)
     - [4.2.1 Handling Cluster Link Deletion Error(s)](#421-handling-cluster-link-deletion-errors)
 - [5.0 Resources](#50-resources)
@@ -230,92 +229,17 @@ Here's the argument table for `deploy.sh create` command:
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
 
-#### **4.1.1 Handling DNS Resolution Errors**
+#### **4.1.1 Cluster Linking Error**
 
 ```bash
- Error: error creating Kafka Topic: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/topics": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_topic.source_stock_trades,
-│   on setup-confluent-kafka-sandbox_cluster.tf line 50, in resource "confluent_kafka_topic" "source_stock_trades":
-│   50: resource "confluent_kafka_topic" "source_stock_trades" {
-│ 
-╵
 ╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["DESCRIBE"],
-│   on setup-confluent-kafka-sandbox_cluster.tf line 100, in resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls":
-│  100: resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
-│ 
-╵
-╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["WRITE"],
-│   on setup-confluent-kafka-sandbox_cluster.tf line 100, in resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls":
-│  100: resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
-│ 
-╵
-╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["READ"],
-│   on setup-confluent-kafka-sandbox_cluster.tf line 100, in resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls":
-│  100: resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
-│ 
-╵
-╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_group,
-│   on setup-confluent-kafka-sandbox_cluster.tf line 162, in resource "confluent_kafka_acl" "sandbox_cluster_app_consumer_read_on_group":
-│  162: resource "confluent_kafka_acl" "sandbox_cluster_app_consumer_read_on_group" {
-│ 
-╵
-╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster,
-│   on setup-confluent-kafka-sandbox_cluster.tf line 211, in resource "confluent_kafka_acl" "sandbox_cluster_app_connector_describe_on_cluster":
-│  211: resource "confluent_kafka_acl" "sandbox_cluster_app_connector_describe_on_cluster" {
-│ 
-╵
-╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics,
-│   on setup-confluent-kafka-sandbox_cluster.tf line 255, in resource "confluent_kafka_acl" "sandbox_cluster_app_connector_create_on_data_preview_topics":
-│  255: resource "confluent_kafka_acl" "sandbox_cluster_app_connector_create_on_data_preview_topics" {
-│ 
-╵
-╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-111qr6.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-111qr6/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.sandbox_cluster_app_connector_write_on_data_preview_topics,
-│   on setup-confluent-kafka-sandbox_cluster.tf line 277, in resource "confluent_kafka_acl" "sandbox_cluster_app_connector_write_on_data_preview_topics":
-│  277: resource "confluent_kafka_acl" "sandbox_cluster_app_connector_write_on_data_preview_topics" {
-│ 
-╵
-╷
-│ Error: error creating Kafka ACLs: Post "https://lkc-7vvj61.us-east-1.aws.private.confluent.cloud:443/kafka/v3/clusters/lkc-7vvj61/acls": net/http: TLS handshake timeout
-│ 
-│   with confluent_kafka_acl.shared_cluster_app_consumer_read_on_group,
-│   on setup-confluent-kafka-shared_cluster.tf line 85, in resource "confluent_kafka_acl" "shared_cluster_app_consumer_read_on_group":
-│   85: resource "confluent_kafka_acl" "shared_cluster_app_consumer_read_on_group" {
-│ 
-```
-
-If you encounter DNS resolution errors like the ones above during the apply process, simply re-run the `./deploy.sh create` script.
-
-#### **4.1.2 Cluster Linking Error**
-
-```bash
-│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link LL0WktYVQom94jrrQTIuDg already exists.
+│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link FuTVbH1ySlSj7siVhXz8dQ already exists.
 │ 
 │   with confluent_cluster_link.sandbox_and_shared_inbound,
-│   on setup-confluent-cluster_linking.tf line 122, in resource "confluent_cluster_link" "sandbox_and_shared_inbound":
-│  122: resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
+│   on setup-confluent-cluster_linking.tf line 135, in resource "confluent_cluster_link" "sandbox_and_shared_inbound":
+│  135: resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
 │ 
+╵ 
 ```
 
 If you see the above error, it indicates that the previous failed attempt left the cluster link in place. To resolve, delete the existing cluster link via the Confluent CLI:

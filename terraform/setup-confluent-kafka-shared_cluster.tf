@@ -46,6 +46,16 @@ module "kafka_shared_cluster_app_manager_api_key" {
   ]
 }
 
+# Wait for Shared API Key propagation before creating resources that depend on it
+resource "time_sleep" "wait_for_shared_api_key_propagation" {
+  depends_on = [
+    confluent_role_binding.shared_cluster_app_manager_kafka_cluster_admin,
+    module.kafka_shared_cluster_app_manager_api_key
+  ]
+  
+  create_duration = "90s"
+}
+
 resource "confluent_service_account" "shared_cluster_app_consumer" {
   display_name = "shared_cluster_app_consumer"
   description  = "Shared Cluster App Consumer Service account to consume from 'stock_trades' topic"
@@ -72,7 +82,7 @@ module "kafka_shared_cluster_app_consumer_api_key" {
   }
 
   # Optional Input(s)
-  key_display_name             = "Confluent Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
+  key_display_name             = "Shared Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
   number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
   day_count                    = var.day_count
   disable_wait_for_ready       = true
@@ -100,6 +110,7 @@ resource "confluent_kafka_acl" "shared_cluster_app_consumer_read_on_group" {
   }
 
   depends_on = [
-    module.kafka_shared_cluster_app_consumer_api_key
+    module.kafka_shared_cluster_app_consumer_api_key,
+    time_sleep.wait_for_shared_api_key_propagation
   ]
 }
