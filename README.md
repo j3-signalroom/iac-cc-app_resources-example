@@ -19,7 +19,6 @@ Below is the Terraform resource visualization of the infrastructure that's creat
   - [4.1 Deploy the Infrastructure](#41-deploy-the-infrastructure)
     - [4.1.1 Cluster Linking Error](#411-cluster-linking-error)
   - [4.2 Teardown the Infrastructure](#42-teardown-the-infrastructure)
-    - [4.2.1 Handling Cluster Link Deletion Error(s)](#421-handling-cluster-link-deletion-errors)
 - [5.0 Resources](#50-resources)
   - [5.1 Terminology](#51-terminology)
   - [5.2 Related Documentation](#52-related-documentation)
@@ -233,19 +232,19 @@ Here's the argument table for `deploy.sh create` command:
 
 ```bash
 ╷
-│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link FuTVbH1ySlSj7siVhXz8dQ already exists.
+│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link Wvz-HzlFQhG5D-FbPb7w9w already exists.
 │ 
-│   with confluent_cluster_link.sandbox_and_shared_inbound,
-│   on setup-confluent-cluster_linking.tf line 135, in resource "confluent_cluster_link" "sandbox_and_shared_inbound":
-│  135: resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
+│   with confluent_cluster_link.shared_to_sandbox,
+│   on setup-confluent-cluster_linking.tf line 133, in resource "confluent_cluster_link" "shared_to_sandbox":
+│  133: resource "confluent_cluster_link" "shared_to_sandbox" {
 │ 
-╵ 
+╵
 ```
 
 If you see the above error, it indicates that the previous failed attempt left the cluster link in place. To resolve, delete the existing cluster link via the Confluent CLI:
 
 ```bash
-confluent kafka link delete bidirectional_between_sandbox_and_shared --cluster <SANDBOX_CLUSTER_ID> --environment <ENVIRONMENT_ID> --force
+confluent kafka link delete bidirectional_between_sandbox_and_shared --cluster <CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> --environment <CONFLUENT_ENVIRONMENT_ID> --force
 ```
 
 Then re-run the `./deploy.sh create` command.
@@ -274,47 +273,6 @@ Here's the argument table for `deploy.sh destroy` command:
 | `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
-
-#### **4.2.1 Handling Cluster Link Deletion Error(s)**
-
-If you encounter a Cluster Link deletion error during the destroy process, you may see an error message similar to the following:
-
-```bash
-│ Error: error deleting Cluster Link "lkc-y07p8j/bidirectional_between_sandbox_and_shared": 404 Not Found; could not parse error details; raw response body: "{\"error_code\":404,\"message\":\"The cluster link doesn't exist: Cluster Link bidirectional_between_sandbox_and_shared does not exist.\"}"
-│ 
-│ 
-╵
-```
-
-**Navigate to the Terraform directory:**
-
-```bash
-cd terraform
-```
-
-**Remove the unreachable resources from the Terraform state:**
-
-```bash
-terraform state rm 'confluent_cluster_link.sandbox_and_shared_outbound'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_connector_write_on_target_topic'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_connector_write_on_data_preview_topics'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["DESCRIBE"]'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["READ"]'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls["WRITE"]'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_topic'
-terraform state rm 'confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_group'
-terraform state rm 'confluent_kafka_topic.source_stock_trades'
-```
-
-**Navigate back to the root directory:**
-
-```bash
-cd ..
-```
-
-Rerun the `./deploy.sh destroy` command.
 
 ## **5.0 Resources**
 

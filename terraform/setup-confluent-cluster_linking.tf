@@ -94,7 +94,45 @@ resource "time_sleep" "wait_for_cluster_linking_api_key_propagation" {
   create_duration = "120s"
 }
 
-resource "confluent_cluster_link" "sandbox_to_shared" {
+resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
+  link_name = "bidirectional_between_sandbox_and_shared"
+  link_mode = "BIDIRECTIONAL"
+  local_kafka_cluster {
+    id            = data.confluent_kafka_cluster.sandbox_cluster.id
+    rest_endpoint = data.confluent_kafka_cluster.sandbox_cluster.rest_endpoint
+    credentials {
+      key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
+      secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
+    }
+  }
+
+  remote_kafka_cluster {
+    id                 = data.confluent_kafka_cluster.shared_cluster.id
+    bootstrap_endpoint = data.confluent_kafka_cluster.shared_cluster.bootstrap_endpoint
+    credentials {
+      key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
+      secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
+    }
+  }
+
+  depends_on = [
+    module.sandbox_cluster_linking_app_manager_api_key,
+    module.shared_cluster_linking_app_manager_api_key,
+    confluent_kafka_topic.source_stock_trades,
+    confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics,
+    confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster,
+    confluent_kafka_acl.sandbox_cluster_app_connector_write_on_data_preview_topics,
+    confluent_kafka_acl.sandbox_cluster_app_connector_write_on_target_topic,
+    confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_group,
+    confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_topic,
+    confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls,
+    confluent_connector.source,
+    time_sleep.wait_for_cluster_linking_api_key_propagation
+  ]
+}
+
+# Reverse link: Shared -> Sandbox (required for bidirectional mode)
+resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   link_name = "bidirectional_between_sandbox_and_shared"
   link_mode = "BIDIRECTIONAL"
   
@@ -117,43 +155,20 @@ resource "confluent_cluster_link" "sandbox_to_shared" {
   }
 
   depends_on = [
+    module.sandbox_cluster_linking_app_manager_api_key,
+    module.shared_cluster_linking_app_manager_api_key,
     time_sleep.wait_for_cluster_linking_api_key_propagation,
-    confluent_kafka_topic.source_stock_trades,
-    confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics,
-    confluent_kafka_acl.sandbox_cluster_app_connector_describe_on_cluster,
-    confluent_kafka_acl.sandbox_cluster_app_connector_write_on_data_preview_topics,
-    confluent_kafka_acl.sandbox_cluster_app_connector_write_on_target_topic,
-    confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_group,
-    confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_topic,
-    confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls,
-    confluent_connector.source
+    confluent_cluster_link.sandbox_and_shared_outbound
   ]
 }
 
-resource "confluent_cluster_link" "shared_to_sandbox" {
-  link_name = "bidirectional_between_sandbox_and_shared"
-  link_mode = "BIDIRECTIONAL"
-  local_kafka_cluster {
-    id            = data.confluent_kafka_cluster.sandbox_cluster.id
-    rest_endpoint = data.confluent_kafka_cluster.sandbox_cluster.rest_endpoint
-    credentials {
-      key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
-      secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
-    }
-  }
-
-  remote_kafka_cluster {
-    id                 = data.confluent_kafka_cluster.shared_cluster.id
-    bootstrap_endpoint = data.confluent_kafka_cluster.shared_cluster.bootstrap_endpoint
-    credentials {
-      key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
-      secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
-    }
-  }
-
+# Wait for Cluster Link to be active before creating reverse link
+resource "time_sleep" "wait_for_cluster_linking" {
   depends_on = [
-    confluent_cluster_link.sandbox_to_shared
+    confluent_cluster_link.sandbox_and_shared_outbound
   ]
+  
+  create_duration = "1m"
 }
 
 resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
@@ -161,7 +176,7 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
     topic_name = confluent_kafka_topic.source_stock_trades.topic_name 
   }
   cluster_link {
-    link_name = confluent_cluster_link.sandbox_to_shared.link_name
+    link_name = confluent_cluster_link.sandbox_and_shared_outbound.link_name
   }
   
   kafka_cluster {
@@ -175,8 +190,9 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   }
 
   depends_on = [
-    confluent_cluster_link.sandbox_to_shared,
-    confluent_cluster_link.shared_to_sandbox
+    module.shared_cluster_linking_app_manager_api_key,
+    confluent_cluster_link.sandbox_and_shared_inbound,
+    time_sleep.wait_for_cluster_linking
   ]
 }
 
