@@ -43,7 +43,19 @@ module "kafka_sandbox_cluster_app_manager_api_key" {
   day_count                    = var.day_count
   disable_wait_for_ready       = true
 
-  depends_on = [ confluent_service_account.sandbox_cluster_app_manager ]
+  depends_on = [ 
+    confluent_service_account.sandbox_cluster_app_manager 
+  ]
+}
+
+# Wait for Sandbox API Key propagation before creating resources that depend on it
+resource "time_sleep" "wait_for_sandbox_api_key_propagation" {
+  depends_on = [
+    confluent_role_binding.sandbox_cluster_app_manager_kafka_cluster_admin,
+    module.kafka_sandbox_cluster_app_manager_api_key
+  ]
+  
+  create_duration = "90s"
 }
 
 # Create the `dev-stock_trades` Kafka topic
@@ -59,7 +71,7 @@ resource "confluent_kafka_topic" "source_stock_trades" {
   }
 
   depends_on = [ 
-    module.kafka_sandbox_cluster_app_manager_api_key
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -89,12 +101,14 @@ module "kafka_sandbox_cluster_app_consumer_api_key" {
   }
 
   # Optional Input(s)
-  key_display_name             = "Confluent Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
+  key_display_name             = "Sandbox Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
   number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
   day_count                    = var.day_count
   disable_wait_for_ready       = true
 
-  depends_on = [ confluent_service_account.sandbox_cluster_app_manager ]
+  depends_on = [ 
+    confluent_service_account.sandbox_cluster_app_manager
+  ]
 }
 
 resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
@@ -121,7 +135,8 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
   }
 
   depends_on = [
-    module.kafka_sandbox_cluster_app_consumer_api_key
+    module.kafka_sandbox_cluster_app_consumer_api_key,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -151,7 +166,7 @@ module "kafka_sandbox_cluster_app_producer_api_key" {
   }
 
   # Optional Input(s)
-  key_display_name             = "Confluent Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
+  key_display_name             = "Sandbox Kafka Cluster Service Account API Key - {date} - Managed by Terraform Cloud"
   number_of_api_keys_to_retain = var.number_of_api_keys_to_retain
   day_count                    = var.day_count
   disable_wait_for_ready       = true
@@ -177,7 +192,8 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_consumer_read_on_group" {
   }
 
   depends_on = [
-    module.kafka_sandbox_cluster_app_manager_api_key
+    module.kafka_sandbox_cluster_app_manager_api_key,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -199,7 +215,8 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_consumer_read_on_topic" {
   }
 
   depends_on = [
-    module.kafka_sandbox_cluster_app_manager_api_key
+    module.kafka_sandbox_cluster_app_manager_api_key,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -226,7 +243,8 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_connector_describe_on_cluste
   }
 
   depends_on = [
-    module.kafka_sandbox_cluster_app_manager_api_key
+    module.kafka_sandbox_cluster_app_manager_api_key,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -248,7 +266,8 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_connector_write_on_target_to
   }
 
   depends_on = [
-    module.kafka_sandbox_cluster_app_manager_api_key
+    module.kafka_sandbox_cluster_app_manager_api_key,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -270,7 +289,8 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_connector_create_on_data_pre
   }
 
   depends_on = [
-    module.kafka_sandbox_cluster_app_manager_api_key
+    module.kafka_sandbox_cluster_app_manager_api_key,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -292,7 +312,8 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_connector_write_on_data_prev
   }
 
   depends_on = [
-    module.kafka_sandbox_cluster_app_manager_api_key
+    module.kafka_sandbox_cluster_app_manager_api_key,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }
 
@@ -326,5 +347,6 @@ resource "confluent_connector" "source" {
     confluent_kafka_acl.sandbox_cluster_app_connector_write_on_target_topic,
     confluent_kafka_acl.sandbox_cluster_app_connector_create_on_data_preview_topics,
     confluent_kafka_acl.sandbox_cluster_app_connector_write_on_data_preview_topics,
+    time_sleep.wait_for_sandbox_api_key_propagation
   ]
 }

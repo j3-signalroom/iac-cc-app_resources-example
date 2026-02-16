@@ -82,6 +82,18 @@ module "shared_cluster_linking_app_manager_api_key" {
   ]
 }
 
+# Wait for Cluster Linking API Key propagation before creating resources that depend on it
+resource "time_sleep" "wait_for_cluster_linking_api_key_propagation" {
+  depends_on = [
+    confluent_role_binding.sandbox_cluster_linking_app_manager,
+    confluent_role_binding.shared_cluster_linking_app_manager,
+    module.sandbox_cluster_linking_app_manager_api_key,
+    module.shared_cluster_linking_app_manager_api_key
+  ]
+  
+  create_duration = "90s"
+}
+
 resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   link_name = "bidirectional_between_sandbox_and_shared"
   link_mode = "BIDIRECTIONAL"
@@ -114,7 +126,8 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
     confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_group,
     confluent_kafka_acl.sandbox_cluster_app_consumer_read_on_topic,
     confluent_kafka_acl.sandbox_cluster_app_producer_prefix_acls,
-    confluent_connector.source
+    confluent_connector.source,
+    time_sleep.wait_for_cluster_linking_api_key_propagation
   ]
 }
 
@@ -144,7 +157,7 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   depends_on = [
     module.sandbox_cluster_linking_app_manager_api_key,
     module.shared_cluster_linking_app_manager_api_key,
-    time_sleep.wait_for_cluster_linking,
+    time_sleep.wait_for_cluster_linking_api_key_propagation,
     confluent_cluster_link.sandbox_and_shared_outbound
   ]
 }
