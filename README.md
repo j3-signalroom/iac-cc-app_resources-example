@@ -7,6 +7,23 @@ Below is the Terraform resource visualization of the infrastructure that's creat
 
 **Table of Contents**
 <!-- toc -->
+- [1.0 Architecture Overview](#10-architecture-overview)
+- [2.0 Why the PrivateLink Configuration Lives in a Separate Workspace](#20-why-the-privatelink-configuration-lives-in-a-separate-workspace)
+    + [2.1. Different Lifecycles](#21-different-lifecycles)
+    + [2.2. Different Blast Radius](#22-different-blast-radius)
+    + [2.3. Different Permission Boundaries](#23-different-permission-boundaries)
+    + [2.4. Team Ownership Alignment](#24-team-ownership-alignment)
+    + [2.5. Dependency Ordering Without Tight Coupling](#25-dependency-ordering-without-tight-coupling)
+- [3.0 What This Workspace Provisions](#30-what-this-workspace-provisions)
+- [4.0 Let's Get Started](#40-lets-get-started)
+  - [4.1 Deploy the Infrastructure](#41-deploy-the-infrastructure)
+    - [4.1.1 Handling DNS Resolution Errors](#411-handling-dns-resolution-errors)
+    - [4.1.2 Cluster Linking Error](#412-cluster-linking-error)
+  - [4.2 Teardown the Infrastructure](#42-teardown-the-infrastructure)
+    - [4.2.1 Handling Cluster Link Deletion Error(s)](#421-handling-cluster-link-deletion-errors)
+- [5.0 Resources](#50-resources)
+  - [5.1 Terminology](#51-terminology)
+  - [5.2 Related Documentation](#52-related-documentation)
 <!-- tocstop -->
 
 ## **1.0 Architecture Overview**
@@ -188,22 +205,27 @@ This workspace references the already-provisioned clusters by their IDs (passed 
 The deploy.sh script handles authentication and Terraform execution: 
 
 ```bash
-./deploy.sh create \
-  --profile=<SSO_PROFILE_NAME> \
-  --confluent-api-key=<CONFLUENT_API_KEY> \
-  --confluent-api-secret=<CONFLUENT_API_SECRET> \
-  --tfe-token=<TFE_TOKEN> \
-  [--day-count=<DAY_COUNT>]             `# Default: 30 (API key rotation interval)`
+./deploy.sh create --profile=<SSO_PROFILE_NAME> \
+                   --confluent-api-key=<CONFLUENT_API_KEY> \
+                   --confluent-api-secret=<CONFLUENT_API_SECRET> \
+                   --tfe-token=<TFE_TOKEN> \
+                   --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> \
+                   --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> \
+                   --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID> \
+                   [--day-count=<DAY_COUNT>]
 ```
 
-| Argument | Required | Default | Description |
-|---|---|---|---|
-| `create` | ✅ | — | The command to execute. `create` deploys the infrastructure via `terraform apply`.|
-| `--profile` | ✅ | — | The AWS SSO profile name. Passed directly to `aws sso login` and `aws2-wrap` for authentication, and used to resolve `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN`, which are then exported as `TF_VAR_aws_region`, `TF_VAR_aws_access_key_id`, `TF_VAR_aws_secret_access_key`, and `TF_VAR_aws_session_token` for Terraform, respectively. |
-| `--confluent-api-key` | ✅ | — | Confluent Cloud API key. Exported as `TF_VAR_confluent_api_key` for Terraform. |
-| `--confluent-api-secret` | ✅ | — | Confluent Cloud API secret. Exported as `TF_VAR_confluent_api_secret` for Terraform. |
-| `--tfe-token` | ✅ | — | Terraform Enterprise/Cloud API token. Exported as `TF_VAR_tfe_token` — used for authenticating the TFC Agent or remote backend. |
-| `--day-count` | ❌ | `30` | API key rotation interval in days. Exported as `TF_VAR_day_count`. |
+| Argument | Required | Description |
+|---|---|---|
+| `create` | ✅ | The command to execute. `create` deploys the infrastructure via `terraform apply`.|
+| `--profile` | ✅ | The AWS SSO profile name. Passed directly to `aws sso login` and `aws2-wrap` for authentication, and used to resolve `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN`, which are then exported as `TF_VAR_aws_region`, `TF_VAR_aws_access_key_id`, `TF_VAR_aws_secret_access_key`, and `TF_VAR_aws_session_token` for Terraform, respectively. |
+| `--confluent-api-key` | ✅ | Confluent Cloud API key. Exported as `TF_VAR_confluent_api_key` for Terraform. |
+| `--confluent-api-secret` | ✅ | Confluent Cloud API secret. Exported as `TF_VAR_confluent_api_secret` for Terraform. |
+| `--tfe-token` | ✅ | Terraform Enterprise/Cloud API token. Exported as `TF_VAR_tfe_token` — used for authenticating the TFC Agent or remote backend. |
+| `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
+| `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
+| `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
+| `--day-count` | ❌ | API key rotation interval in days. Exported as `TF_VAR_day_count`. |
 
 #### **4.1.1 Handling DNS Resolution Errors**
 
@@ -303,20 +325,25 @@ Then re-run the `deploy.sh` script with the `create` command.
 
 ### **4.2 Teardown the Infrastructure**
 ```bash
-./deploy.sh destroy \
-  --profile=<SSO_PROFILE_NAME> \
-  --confluent-api-key=<CONFLUENT_API_KEY> \
-  --confluent-api-secret=<CONFLUENT_API_SECRET> \
-  --tfe-token=<TFE_TOKEN> \
+./deploy.sh destroy --profile=<SSO_PROFILE_NAME> \
+                    --confluent-api-key=<CONFLUENT_API_KEY> \
+                    --confluent-api-secret=<CONFLUENT_API_SECRET> \
+                    --tfe-token=<TFE_TOKEN> \
+                    --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> \
+                    --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> \
+                    --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID>
 ```
 
 | Argument | Required | Default | Description |
 |---|---|---|---|
 | `destroy` | ✅ | — | The command to execute. `destroy` tears it down via `terraform destroy` and force-deletes associated AWS Secrets Manager secrets. |
-| `--profile` | ✅ | — | The AWS SSO profile name. Passed directly to `aws sso login` and `aws2-wrap` for authentication, and used to resolve `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN`, which are then exported as `TF_VAR_aws_region`, `TF_VAR_aws_access_key_id`, `TF_VAR_aws_secret_access_key`, and `TF_VAR_aws_session_token` for Terraform, respectively. |
-| `--confluent-api-key` | ✅ | — | Confluent Cloud API key. Exported as `TF_VAR_confluent_api_key` for Terraform. |
-| `--confluent-api-secret` | ✅ | — | Confluent Cloud API secret. Exported as `TF_VAR_confluent_api_secret` for Terraform. |
-| `--tfe-token` | ✅ | — | Terraform Enterprise/Cloud API token. Exported as `TF_VAR_tfe_token` — used for authenticating the TFC Agent or remote backend. |
+| `--profile` | ✅ | The AWS SSO profile name. Passed directly to `aws sso login` and `aws2-wrap` for authentication, and used to resolve `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN`, which are then exported as `TF_VAR_aws_region`, `TF_VAR_aws_access_key_id`, `TF_VAR_aws_secret_access_key`, and `TF_VAR_aws_session_token` for Terraform, respectively. |
+| `--confluent-api-key` | ✅ | Confluent Cloud API key. Exported as `TF_VAR_confluent_api_key` for Terraform. |
+| `--confluent-api-secret` | ✅ | Confluent Cloud API secret. Exported as `TF_VAR_confluent_api_secret` for Terraform. |
+| `--tfe-token` | ✅ | Terraform Enterprise/Cloud API token. Exported as `TF_VAR_tfe_token` — used for authenticating the TFC Agent or remote backend. |
+| `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
+| `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
+| `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
 
 #### **4.2.1 Handling Cluster Link Deletion Error(s)**
 
@@ -370,7 +397,7 @@ Rerun the `deploy.sh` script with the `destroy` command.
 - **PL**: PrivateLink - An AWS service that enables private connectivity between VPCs and services.
 - **IaC**: Infrastructure as Code - The practice of managing and provisioning computing infrastructure through machine-readable definition files.
 
-### **4.2 Related Documentation**
+### **5.2 Related Documentation**
 - [AWS PrivateLink Overview in Confluent Cloud](https://docs.confluent.io/cloud/current/networking/aws-privatelink-overview.html#aws-privatelink-overview-in-ccloud)
 - [Use AWS PrivateLink for Serverless Products on Confluent Cloud](https://docs.confluent.io/cloud/current/networking/aws-platt.html#use-aws-privatelink-for-serverless-products-on-ccloud)
 - [GitHub Sample Project for Confluent Terraform Provider PrivateLink Attachment](https://github.com/confluentinc/terraform-provider-confluent/tree/master/examples/configurations/enterprise-privatelinkattachment-aws-kafka-acls)
