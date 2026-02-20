@@ -108,7 +108,7 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
 
   remote_kafka_cluster {
     id                 = data.confluent_kafka_cluster.shared_cluster.id
-    bootstrap_endpoint = data.confluent_kafka_cluster.shared_cluster.bootstrap_endpoint
+    bootstrap_endpoint = local.shared_cluster_bootstrap_endpoint
     credentials {
       key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -133,8 +133,9 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
 
 # Reverse link: Shared -> Sandbox (required for bidirectional mode)
 resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
-  link_name = "bidirectional_between_sandbox_and_shared"
-  link_mode = "BIDIRECTIONAL"
+  link_name       = "bidirectional_between_sandbox_and_shared"
+  link_mode       = "BIDIRECTIONAL"
+  connection_mode = "INBOUND"
   
   local_kafka_cluster {
     id            = data.confluent_kafka_cluster.shared_cluster.id
@@ -147,7 +148,7 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
 
   remote_kafka_cluster {
     id                 = data.confluent_kafka_cluster.sandbox_cluster.id
-    bootstrap_endpoint = data.confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint
+    bootstrap_endpoint = local.sandbox_cluster_bootstrap_endpoint
     credentials {
       key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -155,9 +156,6 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   }
 
   depends_on = [
-    module.sandbox_cluster_linking_app_manager_api_key,
-    module.shared_cluster_linking_app_manager_api_key,
-    time_sleep.wait_for_cluster_linking_api_key_propagation,
     confluent_cluster_link.sandbox_and_shared_outbound
   ]
 }
@@ -190,7 +188,6 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   }
 
   depends_on = [
-    module.shared_cluster_linking_app_manager_api_key,
     confluent_cluster_link.sandbox_and_shared_inbound,
     time_sleep.wait_for_cluster_linking
   ]
