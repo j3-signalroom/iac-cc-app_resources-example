@@ -94,21 +94,21 @@ resource "time_sleep" "wait_for_cluster_linking_api_key_propagation" {
   create_duration = "120s"
 }
 
-resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
-  link_name = "bidirectional_between_sandbox_and_shared"
-  link_mode = "BIDIRECTIONAL"
-  local_kafka_cluster {
+resource "confluent_cluster_link" "sandbox_to_shared" {
+  link_name = "sandbox_to_shared"
+
+  source_kafka_cluster {
     id            = data.confluent_kafka_cluster.sandbox_cluster.id
-    rest_endpoint = local.sandbox_cluster_rest_endpoint
+    bootstrap_endpoint = local.sandbox_cluster_bootstrap_endpoint
     credentials {
       key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
     }
   }
 
-  remote_kafka_cluster {
+  destination_kafka_cluster {
     id                 = data.confluent_kafka_cluster.shared_cluster.id
-    bootstrap_endpoint = local.shared_cluster_bootstrap_endpoint
+    rest_endpoint = local.shared_cluster_rest_endpoint
     credentials {
       key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -131,50 +131,12 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   ]
 }
 
-# Reverse link: Shared -> Sandbox (required for bidirectional mode)
-resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
-  link_name       = "bidirectional_between_sandbox_and_shared"
-  link_mode       = "BIDIRECTIONAL"
-  connection_mode = "INBOUND"
-  
-  local_kafka_cluster {
-    id            = data.confluent_kafka_cluster.shared_cluster.id
-    rest_endpoint = local.shared_cluster_rest_endpoint
-    credentials {
-      key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
-      secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
-    }
-  }
-
-  remote_kafka_cluster {
-    id                 = data.confluent_kafka_cluster.sandbox_cluster.id
-    bootstrap_endpoint = local.sandbox_cluster_bootstrap_endpoint
-    credentials {
-      key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
-      secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
-    }
-  }
-
-  depends_on = [
-    confluent_cluster_link.sandbox_and_shared_outbound
-  ]
-}
-
-# Wait for Cluster Link to be active before creating reverse link
-resource "time_sleep" "wait_for_cluster_linking" {
-  depends_on = [
-    confluent_cluster_link.sandbox_and_shared_outbound
-  ]
-  
-  create_duration = "1m"
-}
-
 resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   source_kafka_topic {
     topic_name = confluent_kafka_topic.source_stock_trades.topic_name 
   }
   cluster_link {
-    link_name = confluent_cluster_link.sandbox_and_shared_outbound.link_name
+    link_name = confluent_cluster_link.sandbox_to_shared.link_name
   }
   
   kafka_cluster {
@@ -188,20 +150,7 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   }
 
   depends_on = [
-    confluent_cluster_link.sandbox_and_shared_inbound,
-    time_sleep.wait_for_cluster_linking
+    confluent_cluster_link.sandbox_to_shared,
+    time_sleep.wait_for_cluster_linking_api_key_propagation
   ]
 }
-
-## Get all cluster links via REST
-# curl -s -u "<API_KEY>:<API_SECRET>" \
-#   https://<CLUSTER_ID>.<AWS_REGION>.aws.private.confluent.cloud:443/kafka/v3/clusters/<CLUSTER_ID>/links \
-#   | python3 -m json.tool
-
-## If you have the link name, you can use it to delete the link:
-# curl -s -u "<API_KEY>:<API_SECRET>" -X DELETE \
-#   https://<CLUSTER_ID>.<AWS_REGION>.aws.private.confluent.cloud:443/kafka/v3/clusters/<CLUSTER_ID>/links/<LINK_NAME>
-
-## If you have the link UUID, you can use it to delete the link:
-# curl -s -u "<API_KEY>:<API_SECRET>" -X DELETE \
-#   "https://<CLUSTER_ID>.<AWS_REGION>.aws.private.confluent.cloud:443/kafka/v3/clusters/<CLUSTER_ID>/links/<LINK_UUID>?force=true"
