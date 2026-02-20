@@ -4,10 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is base on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [0.03.00.000] - TBD
+## [0.03.00.000] - 2026-02-20
 ### Added
 - Issue [`#19`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/19)
 - Issue [`#21`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/21)
+- Issue [`#30`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/30)
 
 ### Changed
 - Issue [`#24`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/24)
