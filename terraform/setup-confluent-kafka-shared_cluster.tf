@@ -103,7 +103,7 @@ resource "confluent_kafka_acl" "shared_cluster_app_consumer_read_on_group" {
   host          = "*"
   operation     = "READ"
   permission    = "ALLOW"
-  rest_endpoint = data.confluent_kafka_cluster.shared_cluster.rest_endpoint
+  rest_endpoint = local.shared_cluster_rest_endpoint
   credentials {
     key    = module.kafka_shared_cluster_app_manager_api_key.active_api_key.id
     secret = module.kafka_shared_cluster_app_manager_api_key.active_api_key.secret

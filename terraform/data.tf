@@ -20,4 +20,20 @@ data "confluent_kafka_cluster" "shared_cluster" {
 
 locals {
   acl_operations = ["READ", "WRITE", "DESCRIBE"]
+
+  # Confluent requires the dash ("-") characters to be removed from the
+  # Access Point ID when constructing the PNI endpoint address
+  access_point_id = replace(var.confluent_access_code_id, "-", "")
+
+  # Create base address for PNI endpoints using the modified Access Point
+  # ID and AWS region
+  base_address = "${local.access_point_id}.${var.aws_region}.aws.accesspoint.glb.confluent.cloud"
+
+  # By default, the Confluent Terraform Provider does not generate the 
+  # Confluent PNI-enabled endpoint, so it must be configured manually
+  # when the Confluent Access Point ID is provided.
+  sandbox_cluster_bootstrap_endpoint = var.confluent_access_code_id == "" ? data.confluent_kafka_cluster.sandbox_cluster.bootstrap_endpoint : "${var.confluent_sandbox_kafka_cluster_id}-${local.base_address}:9092"
+  sandbox_cluster_rest_endpoint = var.confluent_access_code_id == "" ? data.confluent_kafka_cluster.sandbox_cluster.rest_endpoint : "https://${var.confluent_sandbox_kafka_cluster_id}-${local.base_address}:443"
+  shared_cluster_bootstrap_endpoint = var.confluent_access_code_id == "" ? data.confluent_kafka_cluster.shared_cluster.bootstrap_endpoint : "${var.confluent_shared_kafka_cluster_id}-${local.base_address}:9092"
+  shared_cluster_rest_endpoint = var.confluent_access_code_id == "" ? data.confluent_kafka_cluster.shared_cluster.rest_endpoint : "https://${var.confluent_shared_kafka_cluster_id}-${local.base_address}:443"
 }

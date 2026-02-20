@@ -99,7 +99,7 @@ resource "confluent_cluster_link" "sandbox_and_shared_outbound" {
   link_mode = "BIDIRECTIONAL"
   local_kafka_cluster {
     id            = data.confluent_kafka_cluster.sandbox_cluster.id
-    rest_endpoint = data.confluent_kafka_cluster.sandbox_cluster.rest_endpoint
+    rest_endpoint = local.sandbox_cluster_rest_endpoint
     credentials {
       key    = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.sandbox_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -138,7 +138,7 @@ resource "confluent_cluster_link" "sandbox_and_shared_inbound" {
   
   local_kafka_cluster {
     id            = data.confluent_kafka_cluster.shared_cluster.id
-    rest_endpoint = data.confluent_kafka_cluster.shared_cluster.rest_endpoint
+    rest_endpoint = local.shared_cluster_rest_endpoint
     credentials {
       key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
       secret = module.shared_cluster_linking_app_manager_api_key.active_api_key.secret
@@ -181,7 +181,7 @@ resource "confluent_kafka_mirror_topic" "stock_trades_mirror" {
   
   kafka_cluster {
     id            = data.confluent_kafka_cluster.shared_cluster.id
-    rest_endpoint = data.confluent_kafka_cluster.shared_cluster.rest_endpoint
+    rest_endpoint = local.shared_cluster_rest_endpoint
 
     credentials {
       key    = module.shared_cluster_linking_app_manager_api_key.active_api_key.id
