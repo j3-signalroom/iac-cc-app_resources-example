@@ -8,7 +8,7 @@ Below is the Terraform resource visualization of the infrastructure that's creat
 **Table of Contents**
 <!-- toc -->
 - [1.0 Architecture Overview](#10-architecture-overview)
-- [2.0 Why the PrivateLink Configuration Lives in a Separate Workspace](#20-why-the-privatelink-configuration-lives-in-a-separate-workspace)
+- [2.0 Why the Private Connectivity Configuration Lives in a Separate Workspace](#20-why-the-private-connectivity-configuration-lives-in-a-separate-workspace)
     + [2.1. Different Lifecycles](#21-different-lifecycles)
     + [2.2. Different Blast Radius](#22-different-blast-radius)
     + [2.3. Different Permission Boundaries](#23-different-permission-boundaries)
@@ -169,23 +169,23 @@ graph TB
 
 The **Schema Registry** cluster is shared across the environment and its credentials are also stored in AWS Secrets Manager.
 
-## **2.0 Why the PrivateLink Configuration Lives in a Separate Workspace**
-The AWS PrivateLink networking infrastructure is intentionally managed in its own Terraform Cloud workspace (`iac-cc-aws-privatelink-infrastructure-networking-example`), separate from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
+## **2.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**
+The AWS private connectivity networking infrastructure is intentionally managed in its own Terraform Cloud workspace (`iac-cc-aws-privatelink-infrastructure-networking-example`), separate from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
 
 ### **2.1. Different Lifecycles**
 Network infrastructure (VPCs, subnets, PrivateLink endpoint services, VPC endpoints, DNS hosted zones) changes infrequently, often only at initial setup or during major topology changes. Application resources such as service accounts, API keys, ACLs, topics, connectors, and cluster links change much more frequently as teams iterate on their streaming workloads. Coupling them together would force unnecessary plan/apply cycles on stable networking resources every time an application-level change is needed.
 
 ### **2.2. Different Blast Radius**
-A misconfigured Terraform apply against PrivateLink resources could sever private connectivity for every service account and application relying on the cluster. By isolating networking in its own workspace, accidental disruption from application-layer changes is impossible, and vice versa. Each workspace has its own state file, so a corrupted or rolled-back state in one workspace cannot cascade into the other.
+A misconfigured Terraform apply against networking resources could sever private connectivity for every service account and application relying on the cluster. By isolating networking in its own workspace, accidental disruption from application-layer changes is impossible, and vice versa. Each workspace has its own state file, so a corrupted or rolled-back state in one workspace cannot cascade into the other.
 
 ### **2.3. Different Permission Boundaries**
-PrivateLink provisioning requires elevated AWS permissions (creating VPC endpoints, modifying route tables, managing private hosted zones) and Confluent Cloud permissions (accepting PrivateLink connections on enterprise clusters). Application resources require only Confluent Cloud service-account-level permissions and limited AWS access for Secrets Manager. Splitting the workspaces allows tighter IAM scoping, the application workspace's Terraform Cloud agent needs only `secretsmanager:*` on a narrow path, not broad VPC/EC2 permissions.
+Private connectivity provisioning requires elevated AWS permissions (creating VPC endpoints, modifying route tables, managing private hosted zones) and Confluent Cloud permissions (accepting private connectivity connections on enterprise clusters). Application resources require only Confluent Cloud service-account-level permissions and limited AWS access for Secrets Manager. Splitting the workspaces allows tighter IAM scoping, the application workspace's Terraform Cloud agent needs only `secretsmanager:*` on a narrow path, not broad VPC/EC2 permissions.
 
 ### **2.4. Team Ownership Alignment**
-In many organizations, a platform or network engineering team owns the PrivateLink setup, while application or data engineering teams own the Kafka resources layered on top. Separate workspaces map cleanly to separate code repositories, PR review cycles, and on-call responsibilities.
+In many organizations, a platform or network engineering team owns the private connectivity setup, while application or data engineering teams own the Kafka resources layered on top. Separate workspaces map cleanly to separate code repositories, PR review cycles, and on-call responsibilities.
 
 ### **2.5. Dependency Ordering Without Tight Coupling**
-This workspace references the already-provisioned clusters by their IDs (passed in as input variables). It does not create the clusters or their PrivateLink connections, it simply consumes them as data sources. This loose coupling means the PrivateLink workspace can be applied first (and independently validated) before this workspace is ever initialized.
+This workspace references the already-provisioned clusters by their IDs (passed in as input variables). It does not create the clusters or their private connectivity connections, it simply consumes them as data sources. This loose coupling means the private connectivity workspace can be applied first (and independently validated) before this workspace is ever initialized.
 
 ## **3.0 What This Workspace Provisions**
 | Layer | Resources |
