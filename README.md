@@ -7,21 +7,21 @@ Below is the Terraform resource visualization of the infrastructure that's creat
 
 **Table of Contents**
 <!-- toc -->
-- [1.0 Architecture Overview](#10-architecture-overview)
-- [2.0 Why the Private Connectivity Configuration Lives in a Separate Workspace](#20-why-the-private-connectivity-configuration-lives-in-a-separate-workspace)
-    + [2.1. Different Lifecycles](#21-different-lifecycles)
-    + [2.2. Different Blast Radius](#22-different-blast-radius)
-    + [2.3. Different Permission Boundaries](#23-different-permission-boundaries)
-    + [2.4. Team Ownership Alignment](#24-team-ownership-alignment)
-    + [2.5. Dependency Ordering Without Tight Coupling](#25-dependency-ordering-without-tight-coupling)
-- [3.0 What This Workspace Provisions](#30-what-this-workspace-provisions)
-- [4.0 Let's Get Started](#40-lets-get-started)
-  - [4.1 Deploy the Infrastructure](#41-deploy-the-infrastructure)
-    - [4.1.1 Cluster Linking Error](#411-cluster-linking-error)
-  - [4.2 Teardown the Infrastructure](#42-teardown-the-infrastructure)
-- [5.0 Resources](#50-resources)
-  - [5.1 Terminology](#51-terminology)
-  - [5.2 Related Documentation](#52-related-documentation)
+- [1.0 Overview](#10-overview)
+- [2.0 Architecture Overview](#20-architecture-overview)
+- [3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace](#30-why-the-private-connectivity-configuration-lives-in-a-separate-workspace)
+    + [3.1. Different Lifecycles](#31-different-lifecycles)
+    + [3.2. Different Blast Radius](#32-different-blast-radius)
+    + [3.3. Different Permission Boundaries](#33-different-permission-boundaries)
+    + [3.4. Team Ownership Alignment](#34-team-ownership-alignment)
+    + [3.5. Dependency Ordering Without Tight Coupling](#35-dependency-ordering-without-tight-coupling)
+- [4.0 What This Workspace Provisions](#40-what-this-workspace-provisions)
+- [5.0 Let's Get Started](#50-lets-get-started)
+  - [5.1 Deploy the Infrastructure](#51-deploy-the-infrastructure)
+  - [5.2 Teardown the Infrastructure](#52-teardown-the-infrastructure)
+- [6.0 Resources](#60-resources)
+  - [6.1 Terminology](#61-terminology)
+  - [6.2 Related Documentation](#62-related-documentation)
 <!-- tocstop -->
 
 ## **1.0 Overview**
@@ -122,25 +122,25 @@ flowchart TB
 3. **Shared cluster consumers** → read from the mirror topic without needing any access to the Sandbox cluster.
 4. **Schema Registry** (shared across both clusters in the non-prod environment) → validates AVRO schemas.
 
-## **2.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**
+## **3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**
 The AWS private connectivity networking infrastructure is intentionally managed in its own Terraform Cloud workspace (`iac-cc-aws-privatelink-infrastructure-networking-example`), separate from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
 
-### **2.1. Different Lifecycles**
+### **3.1. Different Lifecycles**
 Network infrastructure (VPCs, subnets, PrivateLink endpoint services, VPC endpoints, DNS hosted zones) changes infrequently, often only at initial setup or during major topology changes. Application resources such as service accounts, API keys, ACLs, topics, connectors, and cluster links change much more frequently as teams iterate on their streaming workloads. Coupling them together would force unnecessary plan/apply cycles on stable networking resources every time an application-level change is needed.
 
-### **2.2. Different Blast Radius**
+### **3.2. Different Blast Radius**
 A misconfigured Terraform apply against networking resources could sever private connectivity for every service account and application relying on the cluster. By isolating networking in its own workspace, accidental disruption from application-layer changes is impossible, and vice versa. Each workspace has its own state file, so a corrupted or rolled-back state in one workspace cannot cascade into the other.
 
-### **2.3. Different Permission Boundaries**
+### **3.3. Different Permission Boundaries**
 Private connectivity provisioning requires elevated AWS permissions (creating VPC endpoints, modifying route tables, managing private hosted zones) and Confluent Cloud permissions (accepting private connectivity connections on enterprise clusters). Application resources require only Confluent Cloud service-account-level permissions and limited AWS access for Secrets Manager. Splitting the workspaces allows tighter IAM scoping, the application workspace's Terraform Cloud agent needs only `secretsmanager:*` on a narrow path, not broad VPC/EC2 permissions.
 
-### **2.4. Team Ownership Alignment**
+### **3.4. Team Ownership Alignment**
 In many organizations, a platform or network engineering team owns the private connectivity setup, while application or data engineering teams own the Kafka resources layered on top. Separate workspaces map cleanly to separate code repositories, PR review cycles, and on-call responsibilities.
 
-### **2.5. Dependency Ordering Without Tight Coupling**
+### **3.5. Dependency Ordering Without Tight Coupling**
 This workspace references the already-provisioned clusters by their IDs (passed in as input variables). It does not create the clusters or their private connectivity connections, it simply consumes them as data sources. This loose coupling means the private connectivity workspace can be applied first (and independently validated) before this workspace is ever initialized.
 
-## **3.0 What This Workspace Provisions**
+## **4.0 What This Workspace Provisions**
 | Layer | Resources |
 |-------|-----------|
 | **Sandbox Kafka Cluster** | Service accounts (`app_manager`, `app_producer`, `app_consumer`, `app_connector`), role bindings, ACLs, the `dev.stock_trades` topic, a DataGen Source connector, and rotating API key pairs for each service account |
@@ -150,9 +150,9 @@ This workspace references the already-provisioned clusters by their IDs (passed 
 | **AWS Secrets Manager** | Six secrets storing JAAS credentials and bootstrap server URIs for Java Kafka clients |
 | **Terraform Cloud** | Workspace configuration to run on a TFC agent pool (`signalroom-iac-tfc-agents-pool`) |
 
-## **4.0 Let's Get Started**
+## **5.0 Let's Get Started**
 
-### **4.1 Deploy the Infrastructure**
+### **5.1 Deploy the Infrastructure**
 The deploy.sh script handles authentication and Terraform execution: 
 
 ```bash
@@ -181,28 +181,7 @@ Here's the argument table for `deploy.sh create` command:
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
 
-#### **4.1.1 Cluster Linking Error**
-
-```bash
-╷
-│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link Wvz-HzlFQhG5D-FbPb7w9w already exists.
-│ 
-│   with confluent_cluster_link.shared_to_sandbox,
-│   on setup-confluent-cluster_linking.tf line 133, in resource "confluent_cluster_link" "shared_to_sandbox":
-│  133: resource "confluent_cluster_link" "shared_to_sandbox" {
-│ 
-╵
-```
-
-If you see the above error, it indicates that the previous failed attempt left the cluster link in place. To resolve, delete the existing cluster link via the Confluent CLI:
-
-```bash
-confluent kafka link delete bidirectional_between_sandbox_and_shared --cluster <CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> --environment <CONFLUENT_ENVIRONMENT_ID> --force
-```
-
-Then re-run the `./deploy.sh create` command.
-
-### **4.2 Teardown the Infrastructure**
+### **5.2 Teardown the Infrastructure**
 ```bash
 ./deploy.sh destroy --profile=<SSO_PROFILE_NAME> \
                     --confluent-api-key=<CONFLUENT_API_KEY> \
@@ -227,9 +206,9 @@ Here's the argument table for `deploy.sh destroy` command:
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
 
-## **5.0 Resources**
+## **6.0 Resources**
 
-### **5.1 Terminology**
+### **6.1 Terminology**
 - **ACL**: Access Control List - A list of permissions attached to an object that specifies which users or system processes can access the object and what operations they can perform.
 - **AWS**: Amazon Web Services - A comprehensive cloud computing platform provided by Amazon.
 - **CC**: Confluent Cloud - A fully managed event streaming platform based on Apache Kafka.
@@ -238,5 +217,5 @@ Here's the argument table for `deploy.sh destroy` command:
 - **TFC**: Terraform Cloud - A service that provides infrastructure automation using Terraform.
 - **VPC**: Virtual Private Cloud - A virtual network dedicated to your AWS account.
 
-### **5.2 Related Documentation**
+### **6.2 Related Documentation**
 - [Geo-replication with Cluster Linking on Confluent Cloud](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/index.html#geo-replication-with-cluster-linking-on-ccloud)
