@@ -7,21 +7,21 @@ Below is the Terraform resource visualization of the infrastructure that's creat
 
 **Table of Contents**
 <!-- toc -->
-- [1.0 Overview](#10-overview)
-- [2.0 Architecture Overview](#20-architecture-overview)
-- [3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace](#30-why-the-private-connectivity-configuration-lives-in-a-separate-workspace)
-    + [3.1. Different Lifecycles](#31-different-lifecycles)
-    + [3.2. Different Blast Radius](#32-different-blast-radius)
-    + [3.3. Different Permission Boundaries](#33-different-permission-boundaries)
-    + [3.4. Team Ownership Alignment](#34-team-ownership-alignment)
-    + [3.5. Dependency Ordering Without Tight Coupling](#35-dependency-ordering-without-tight-coupling)
-- [4.0 What This Workspace Provisions](#40-what-this-workspace-provisions)
-- [5.0 Let's Get Started](#50-lets-get-started)
-  - [5.1 Deploy the Infrastructure](#51-deploy-the-infrastructure)
-  - [5.2 Teardown the Infrastructure](#52-teardown-the-infrastructure)
-- [6.0 Resources](#60-resources)
-  - [6.1 Terminology](#61-terminology)
-  - [6.2 Related Documentation](#62-related-documentation)
+- [**1.0 Overview**](#10-overview)
+- [**2.0 Architecture Overview**](#20-architecture-overview)
+- [**3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**](#30-why-the-private-connectivity-configuration-lives-in-a-separate-workspace)
+    + [**3.1. Different Lifecycles**](#31-different-lifecycles)
+    + [**3.2. Different Blast Radius**](#32-different-blast-radius)
+    + [**3.3. Different Permission Boundaries**](#33-different-permission-boundaries)
+    + [**3.4. Team Ownership Alignment**](#34-team-ownership-alignment)
+    + [**3.5. Dependency Ordering Without Tight Coupling**](#35-dependency-ordering-without-tight-coupling)
+- [**4.0 What This Workspace Provisions**](#40-what-this-workspace-provisions)
+- [**5.0 Let's Get Started**](#50-lets-get-started)
+  - [**5.1 Deploy the Infrastructure**](#51-deploy-the-infrastructure)
+  - [**5.2 Teardown the Infrastructure**](#52-teardown-the-infrastructure)
+- [**6.0 Resources**](#60-resources)
+  - [**6.1 Terminology**](#61-terminology)
+  - [**6.2 Related Documentation**](#62-related-documentation)
 <!-- tocstop -->
 
 ## **1.0 Overview**
@@ -123,7 +123,12 @@ flowchart TB
 4. **Schema Registry** (shared across both clusters in the non-prod environment) → validates AVRO schemas.
 
 ## **3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**
-The AWS private connectivity networking infrastructure is intentionally managed in its own Terraform Cloud workspace (`iac-cc-aws-privatelink-infrastructure-networking-example`), separate from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
+The two types of AWS private connectivity networking infrastructure are intentionally managed in separate Terraform Cloud workspaces:
+
+    - [`iac-cc-aws-privatelink-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws_privatelink-infrastructure_networking-example)
+    - [`iac-cc-aws-pni-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws_pni-infrastructure_networking-example)
+    
+These are separated from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
 
 ### **3.1. Different Lifecycles**
 Network infrastructure (VPCs, subnets, PrivateLink endpoint services, VPC endpoints, DNS hosted zones) changes infrequently, often only at initial setup or during major topology changes. Application resources such as service accounts, API keys, ACLs, topics, connectors, and cluster links change much more frequently as teams iterate on their streaming workloads. Coupling them together would force unnecessary plan/apply cycles on stable networking resources every time an application-level change is needed.
@@ -163,6 +168,7 @@ The deploy.sh script handles authentication and Terraform execution:
                    --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> \
                    --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> \
                    --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID> \
+                   [--confluent-access-code-id=<CONFLUENT_ACCESS_CODE_ID>] \
                    [--day-count=<DAY_COUNT>]
 ```
 
@@ -177,6 +183,7 @@ Here's the argument table for `deploy.sh create` command:
 | `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
 | `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
 | `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
+| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
 | `--day-count` | ❌ | API key rotation interval in days. Exported as `TF_VAR_day_count`. |
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
@@ -203,6 +210,7 @@ Here's the argument table for `deploy.sh destroy` command:
 | `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
 | `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
 | `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
+| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
 
@@ -214,6 +222,7 @@ Here's the argument table for `deploy.sh destroy` command:
 - **CC**: Confluent Cloud - A fully managed event streaming platform based on Apache Kafka.
 - **IaC**: Infrastructure as Code - The practice of managing and provisioning computing infrastructure through machine-readable definition files.
 - **JAAS**: Java Authentication and Authorization Service - A Java security framework for user authentication and authorization.
+- **PNI**: Private Network Interface - A method of connecting to Confluent Cloud that provides private connectivity without traversing the public internet.
 - **TFC**: Terraform Cloud - A service that provides infrastructure automation using Terraform.
 - **VPC**: Virtual Private Cloud - A virtual network dedicated to your AWS account.
 
