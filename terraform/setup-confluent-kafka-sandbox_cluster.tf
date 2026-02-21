@@ -58,12 +58,12 @@ resource "time_sleep" "wait_for_sandbox_api_key_propagation" {
   create_duration = "90s"
 }
 
-# Create the `dev-stock_trades` Kafka topic
+# Create the `dev.stock_trades` Kafka topic
 resource "confluent_kafka_topic" "source_stock_trades" {
   kafka_cluster {
     id = data.confluent_kafka_cluster.sandbox_cluster.id
   }
-  topic_name    = "dev-stock_trades"
+  topic_name    = "dev.stock_trades"
   rest_endpoint = local.sandbox_cluster_rest_endpoint
   credentials {
     key    = module.kafka_sandbox_cluster_app_manager_api_key.active_api_key.id
@@ -119,7 +119,7 @@ resource "confluent_kafka_acl" "sandbox_cluster_app_producer_prefix_acls" {
   }
 
   resource_type = "TOPIC"
-  resource_name = "dev-stock_trades"
+  resource_name = "dev.stock_trades"
   pattern_type  = "LITERAL"
 
   principal     = "User:${confluent_service_account.sandbox_cluster_app_producer.id}"

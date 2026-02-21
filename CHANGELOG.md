@@ -12,6 +12,7 @@ The format is base on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), 
 
 ### Changed
 - Issue [`#24`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/24)
+- Issue [`#32`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/32)
 
 ### Fixed
 - Issue [`#25`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/25)
