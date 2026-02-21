@@ -1,5 +1,5 @@
 # IaC Confluent Cloud Application Resources Example
-This Terraform repo provisions the application-layer resources required to demonstrate Confluent Cloud Cluster Linking between two Kafka clusters, a Sandbox (source) cluster and a Shared (destination) cluster, within a single Confluent Cloud environment. All API key credentials are automatically rotated on a configurable schedule and securely stored in AWS Secrets Manager for consumption by Java-based Kafka clients.
+Infrastructure-as-Code (IaC) example demonstrating Confluent Cloud Cluster Linking between a Sandbox and a Shared Kafka cluster, with automated API key rotation, AVRO schema governance, and secrets stored in AWS Secrets Manager, all managed via Terraform Cloud.
 
 Below is the Terraform resource visualization of the infrastructure that's created:
 
@@ -7,199 +7,157 @@ Below is the Terraform resource visualization of the infrastructure that's creat
 
 **Table of Contents**
 <!-- toc -->
-- [1.0 Architecture Overview](#10-architecture-overview)
-- [2.0 Why the Private Connectivity Configuration Lives in a Separate Workspace](#20-why-the-private-connectivity-configuration-lives-in-a-separate-workspace)
-    + [2.1. Different Lifecycles](#21-different-lifecycles)
-    + [2.2. Different Blast Radius](#22-different-blast-radius)
-    + [2.3. Different Permission Boundaries](#23-different-permission-boundaries)
-    + [2.4. Team Ownership Alignment](#24-team-ownership-alignment)
-    + [2.5. Dependency Ordering Without Tight Coupling](#25-dependency-ordering-without-tight-coupling)
-- [3.0 What This Workspace Provisions](#30-what-this-workspace-provisions)
-- [4.0 Let's Get Started](#40-lets-get-started)
-  - [4.1 Deploy the Infrastructure](#41-deploy-the-infrastructure)
-    - [4.1.1 Cluster Linking Error](#411-cluster-linking-error)
-  - [4.2 Teardown the Infrastructure](#42-teardown-the-infrastructure)
-- [5.0 Resources](#50-resources)
-  - [5.1 Terminology](#51-terminology)
-  - [5.2 Related Documentation](#52-related-documentation)
+- [**1.0 Overview**](#10-overview)
+- [**2.0 Architecture Overview**](#20-architecture-overview)
+- [**3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**](#30-why-the-private-connectivity-configuration-lives-in-a-separate-workspace)
+    + [**3.1. Different Lifecycles**](#31-different-lifecycles)
+    + [**3.2. Different Blast Radius**](#32-different-blast-radius)
+    + [**3.3. Different Permission Boundaries**](#33-different-permission-boundaries)
+    + [**3.4. Team Ownership Alignment**](#34-team-ownership-alignment)
+    + [**3.5. Dependency Ordering Without Tight Coupling**](#35-dependency-ordering-without-tight-coupling)
+- [**4.0 What This Workspace Provisions**](#40-what-this-workspace-provisions)
+- [**5.0 Let's Get Started**](#50-lets-get-started)
+  - [**5.1 Deploy the Infrastructure**](#51-deploy-the-infrastructure)
+  - [**5.2 Teardown the Infrastructure**](#52-teardown-the-infrastructure)
+- [**6.0 Resources**](#60-resources)
+  - [**6.1 Terminology**](#61-terminology)
+  - [**6.2 Related Documentation**](#62-related-documentation)
 <!-- tocstop -->
 
-## **1.0 Architecture Overview**
-Below is the full topology of the infrastructure provisioned by this Terraform codebase, which is designed to demonstrate Confluent Cloud Cluster Linking and API key rotation with AWS Secrets Manager.
+## **1.0 Overview**
+This project automates the end-to-end provisioning of a **Confluent Cloud Cluster Linking pattern** in a non-production environment. A **DataGen Source Connector** continuously produces synthetic stock-trade events (AVRO format) to a topic on the **Sandbox cluster**. A **Cluster Link** replicates that topic in real time to the **Shared cluster**, where downstream consumers can read it without direct access to the source cluster.
+
+All credentials are:
+
+- **Automatically rotated** on a configurable schedule using the [`iac-confluent-api_key_rotation-tf_module`](https://github.com/j3-signalroom/iac-confluent-api_key_rotation-tf_module).
+- **Persisted to AWS Secrets Manager** in a format ready for Java Kafka clients (SASL/JAAS) and Schema Registry clients.
+
+Infrastructure state is managed in **Terraform Cloud** (organization: `signalroom`, workspace: `iac-cc-app-resources-example`) using a dedicated **TFC Agent Pool** for secure, private execution.
+
+## **2.0 Architecture Overview**
+The diagram below illustrates the full resource topology provisioned by this configuration:
 
 ```mermaid
----
-title: "Confluent Cloud Cluster Linking with AWS PrivateLink — Architecture"
----
-graph TB
-    %% ── Styling ──────────────────────────────────────────────
-    classDef confluent fill:#172554,stroke:#1e40af,color:#fff
-    classDef kafka fill:#1e3a5f,stroke:#3b82f6,color:#fff
-    classDef sa fill:#0f4c75,stroke:#6dd5ed,color:#fff
-    classDef topic fill:#1a535c,stroke:#4ecdc4,color:#fff
-    classDef connector fill:#6b21a8,stroke:#a78bfa,color:#fff
-    classDef aws fill:#ff9900,stroke:#cc7a00,color:#fff
-    classDef secret fill:#d97706,stroke:#f59e0b,color:#fff
-    classDef tfc fill:#7c3aed,stroke:#a78bfa,color:#fff
-    classDef link fill:#059669,stroke:#34d399,color:#fff
-    classDef sr fill:#0e7490,stroke:#22d3ee,color:#fff
-    classDef mirror fill:#065f46,stroke:#6ee7b7,color:#fff
+flowchart TB
+    subgraph OPERATOR["Operator / CI-CD"]
+        DS["deploy.sh\n(create | destroy)"]
+        AWS_SSO["AWS SSO\nAuthentication"]
+        DS --> AWS_SSO
+    end
 
-    %% ── Confluent Cloud Environment ─────────────────────────
-    subgraph CC["Confluent Cloud Environment (non-prod)"]
+    subgraph TFC["Terraform Cloud (app.terraform.io)"]
         direction TB
-
-        %% ── Schema Registry ─────────────────────────────────
-        subgraph SRCluster["Schema Registry Cluster"]
-            SR_API["src_api<br/><i>Service Account</i>"]:::sa
-            SR_RB_R["DeveloperRead<br/><i>all subjects</i>"]
-            SR_RB_W["DeveloperWrite<br/><i>all subjects</i>"]
-            SR_API --> SR_RB_R
-            SR_API --> SR_RB_W
-        end
-        SRCluster:::sr
-
-        %% ── Sandbox Cluster (Source) ────────────────────────
-        subgraph Sandbox["Sandbox Kafka Cluster — Source"]
-            direction TB
-
-            SB_MGR["sandbox_cluster_app_manager<br/><i>CloudClusterAdmin</i>"]:::sa
-            SB_PROD["sandbox_cluster_app_producer<br/><i>Service Account</i>"]:::sa
-            SB_CONS["sandbox_cluster_app_consumer<br/><i>Service Account</i>"]:::sa
-            SB_CONN_SA["sandbox_cluster_app_connector<br/><i>Service Account</i>"]:::sa
-
-            SB_TOPIC["dev-stock_trades<br/><i>Kafka Topic</i>"]:::topic
-
-            DATAGEN["DataGen Source Connector<br/><i>STOCK_TRADES / AVRO</i>"]:::connector
-
-            SB_ACL_PROD["ACLs: READ, WRITE, DESCRIBE<br/><i>on dev-stock_trades</i>"]
-            SB_ACL_CONS_T["ACL: READ<br/><i>on dev-stock_trades</i>"]
-            SB_ACL_CONS_G["ACL: READ<br/><i>on consumer group</i>"]
-            SB_ACL_CONN["ACLs: DESCRIBE cluster,<br/>WRITE + CREATE topics"]
-
-            SB_PROD --> SB_ACL_PROD --> SB_TOPIC
-            SB_CONS --> SB_ACL_CONS_T --> SB_TOPIC
-            SB_CONS --> SB_ACL_CONS_G
-            SB_CONN_SA --> SB_ACL_CONN --> SB_TOPIC
-            DATAGEN -->|"produces AVRO"| SB_TOPIC
-        end
-        Sandbox:::kafka
-
-        %% ── Shared Cluster (Destination) ────────────────────
-        subgraph Shared["Shared Kafka Cluster — Destination"]
-            direction TB
-
-            SH_MGR["shared_cluster_app_manager<br/><i>CloudClusterAdmin</i>"]:::sa
-            SH_CONS["shared_cluster_app_consumer<br/><i>Service Account</i>"]:::sa
-
-            MIRROR["dev-stock_trades<br/><i>Mirror Topic</i>"]:::mirror
-
-            SH_ACL_CONS_G["ACL: READ<br/><i>on consumer group</i>"]
-
-            SH_CONS --> SH_ACL_CONS_G
-            SH_CONS -.->|"consumes"| MIRROR
-        end
-        Shared:::kafka
-
-        %% ── Cluster Linking ─────────────────────────────────
-        subgraph CLinking["Bidirectional Cluster Link"]
-            direction LR
-            CL_SB_SA["sandbox_cluster_linking_app_manager<br/><i>EnvironmentAdmin</i>"]:::sa
-            CL_SH_SA["shared_cluster_linking_app_manager<br/><i>EnvironmentAdmin</i>"]:::sa
-            CL_OUT["Outbound Link<br/><i>Sandbox → Shared</i>"]:::link
-            CL_IN["Inbound Link<br/><i>Shared → Sandbox</i>"]:::link
-            CL_SB_SA --> CL_OUT
-            CL_SH_SA --> CL_IN
-        end
+        WS["Workspace\niac-cc-app-resources-example"]
+        AGENT["TFC Agent Pool\nsignalroom-iac-tfc-agents-pool"]
+        WS -->|execution_mode = agent| AGENT
     end
-    CC:::confluent
 
-    %% ── Cluster Link connections ─────────────────────────────
-    SB_TOPIC ===>|"replicates via<br/>cluster link"| MIRROR
-    CL_OUT -.-> Sandbox
-    CL_OUT -.-> Shared
-    CL_IN -.-> Shared
-    CL_IN -.-> Sandbox
+    subgraph CC["Confluent Cloud — non-prod Environment"]
+        SR["Schema Registry Cluster\n(Stream Governance)"]
 
-    %% ── AWS Secrets Manager ──────────────────────────────────
-    subgraph AWS["AWS Account"]
+        subgraph SANDBOX["Sandbox Kafka Cluster"]
+            TOPIC["Topic: dev.stock_trades"]
+            DATAGEN["DataGen Source Connector\n(STOCK_TRADES / AVRO)"]
+            SA_MGR_SBX["SA: sandbox_cluster_app_manager\n(CloudClusterAdmin)"]
+            SA_PROD["SA: sandbox_cluster_app_producer\n(READ/WRITE/DESCRIBE on topic)"]
+            SA_CONS_SBX["SA: sandbox_cluster_app_consumer\n(READ on topic & group)"]
+            SA_CONN["SA: sandbox_cluster_app_connector\n(WRITE on topic, DESCRIBE cluster)"]
+            SA_LINK_SBX["SA: sandbox_cluster_linking_app_manager\n(EnvironmentAdmin)"]
+            DATAGEN -->|produces AVRO records| TOPIC
+        end
+
+        subgraph SHARED["Shared Kafka Cluster"]
+            MIRROR["Mirror Topic: dev.stock_trades\n(read-only replica)"]
+            SA_MGR_SHR["SA: shared_cluster_app_manager\n(CloudClusterAdmin)"]
+            SA_CONS_SHR["SA: shared_cluster_app_consumer\n(READ on topic & group)"]
+            SA_LINK_SHR["SA: shared_cluster_linking_app_manager\n(EnvironmentAdmin)"]
+        end
+
+        CLUSTER_LINK["Cluster Link\nsandbox_to_shared"]
+        TOPIC -->|mirrored via| CLUSTER_LINK
+        CLUSTER_LINK --> MIRROR
+    end
+
+    subgraph AWS["AWS"]
         direction TB
-
-        subgraph SM["AWS Secrets Manager"]
-            direction TB
-            SEC_SR["schema_registry_cluster<br/><i>URL + basic auth</i>"]:::secret
-            SEC_SB_MGR["sandbox_cluster/<br/>app_manager/java_client"]:::secret
-            SEC_SB_CONS["sandbox_cluster/<br/>app_consumer/java_client"]:::secret
-            SEC_SB_PROD["sandbox_cluster/<br/>app_producer/java_client"]:::secret
-            SEC_SH_MGR["shared_cluster/<br/>app_manager/java_client"]:::secret
-            SEC_SH_CONS["shared_cluster/<br/>app_consumer/java_client"]:::secret
+        subgraph SM["Secrets Manager\n/confluent_cloud_resource/iac-cc-app_resources-example"]
+            S1["schema_registry_cluster\n(SR URL + API Key)"]
+            S2["sandbox_cluster/app_manager/java_client\n(JAAS + bootstrap)"]
+            S3["sandbox_cluster/app_consumer/java_client\n(JAAS + bootstrap)"]
+            S4["sandbox_cluster/app_producer/java_client\n(JAAS + bootstrap)"]
+            S5["shared_cluster/app_manager/java_client\n(JAAS + bootstrap)"]
+            S6["shared_cluster/app_consumer/java_client\n(JAAS + bootstrap)"]
         end
-        SM:::aws
     end
 
-    %% ── Secret wiring ────────────────────────────────────────
-    SR_API -->|"API key stored"| SEC_SR
-    SB_MGR -->|"JAAS config stored"| SEC_SB_MGR
-    SB_CONS -->|"JAAS config stored"| SEC_SB_CONS
-    SB_PROD -->|"JAAS config stored"| SEC_SB_PROD
-    SH_MGR -->|"JAAS config stored"| SEC_SH_MGR
-    SH_CONS -->|"JAAS config stored"| SEC_SH_CONS
-
-    %% ── Terraform Cloud ──────────────────────────────────────
-    subgraph TFC["Terraform Cloud"]
-        direction LR
-        TFC_ORG["signalroom<br/><i>Organization</i>"]:::tfc
-        TFC_WS["iac-cc-app-resources-example<br/><i>Workspace</i>"]:::tfc
-        TFC_AP["signalroom-iac-tfc-agents-pool<br/><i>Agent Pool</i>"]:::tfc
-        TFC_ORG --- TFC_WS
-        TFC_WS -->|"execution mode: agent"| TFC_AP
+    subgraph KEY_ROT["API Key Rotation Module\n(iac-confluent-api_key_rotation-tf_module v0.23.00.000)"]
+        KR["Rotates API Key Pairs\nevery day_count days\n(default: 30)\nRetains number_of_api_keys_to_retain\n(default: 2)"]
     end
 
-    %% ── API Key Rotation Module ──────────────────────────────
-    ROTATION["iac-confluent-api_key_rotation-tf_module<br/><i>v0.23.00.000</i><br/>Rotates keys every N days,<br/>retains M keys"]
-    ROTATION -.->|"manages keys for"| SB_MGR
-    ROTATION -.->|"manages keys for"| SB_PROD
-    ROTATION -.->|"manages keys for"| SB_CONS
-    ROTATION -.->|"manages keys for"| SH_MGR
-    ROTATION -.->|"manages keys for"| SH_CONS
-    ROTATION -.->|"manages keys for"| CL_SB_SA
-    ROTATION -.->|"manages keys for"| CL_SH_SA
-    ROTATION -.->|"manages keys for"| SR_API
+    DS -->|TF_VAR_* env vars| TFC
+    TFC -->|provisions resources| CC
+    TFC -->|provisions secrets| AWS
+
+    SA_MGR_SBX & SA_PROD & SA_CONS_SBX & SA_CONN & SA_LINK_SBX --> KEY_ROT
+    SA_MGR_SHR & SA_CONS_SHR & SA_LINK_SHR --> KEY_ROT
+    SA_PROD -.->|src_api key| SR
+
+    KEY_ROT -->|active API key pairs stored| SM
+
+    style OPERATOR fill:#1a1a2e,color:#e0e0e0,stroke:#4a90d9
+    style TFC fill:#5C4EE5,color:#fff,stroke:#7B6BFF
+    style CC fill:#0e2a3a,color:#e0e0e0,stroke:#26b5c0
+    style SANDBOX fill:#0a3a2a,color:#e0e0e0,stroke:#00c896
+    style SHARED fill:#2a1a3a,color:#e0e0e0,stroke:#9b59b6
+    style AWS fill:#1a2a1a,color:#e0e0e0,stroke:#f39c12
+    style SM fill:#2a3a1a,color:#e0e0e0,stroke:#f39c12
+    style KEY_ROT fill:#3a2a1a,color:#e0e0e0,stroke:#e67e22
+    style CLUSTER_LINK fill:#1a3a4a,color:#e0e0e0,stroke:#26b5c0
 ```
 
-The **Schema Registry** cluster is shared across the environment and its credentials are also stored in AWS Secrets Manager.
+**Data Flow Summary:**
 
-## **2.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**
-The AWS private connectivity networking infrastructure is intentionally managed in its own Terraform Cloud workspace (`iac-cc-aws-privatelink-infrastructure-networking-example`), separate from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
+1. **DataGen Connector** → produces synthetic `STOCK_TRADES` events (AVRO) → `dev.stock_trades` topic on the Sandbox cluster.
+2. **Cluster Link (sandbox_to_shared)** → mirrors `dev.stock_trades` from Sandbox → Shared cluster as a read-only mirror topic.
+3. **Shared cluster consumers** → read from the mirror topic without needing any access to the Sandbox cluster.
+4. **Schema Registry** (shared across both clusters in the non-prod environment) → validates AVRO schemas.
 
-### **2.1. Different Lifecycles**
+## **3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**
+The two types of AWS private connectivity networking infrastructure are intentionally managed in separate Terraform Cloud workspaces:
+
+    - [`iac-cc-aws-privatelink-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws_privatelink-infrastructure_networking-example)
+    - [`iac-cc-aws-pni-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws_pni-infrastructure_networking-example)
+    
+These are separated from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
+
+### **3.1. Different Lifecycles**
 Network infrastructure (VPCs, subnets, PrivateLink endpoint services, VPC endpoints, DNS hosted zones) changes infrequently, often only at initial setup or during major topology changes. Application resources such as service accounts, API keys, ACLs, topics, connectors, and cluster links change much more frequently as teams iterate on their streaming workloads. Coupling them together would force unnecessary plan/apply cycles on stable networking resources every time an application-level change is needed.
 
-### **2.2. Different Blast Radius**
+### **3.2. Different Blast Radius**
 A misconfigured Terraform apply against networking resources could sever private connectivity for every service account and application relying on the cluster. By isolating networking in its own workspace, accidental disruption from application-layer changes is impossible, and vice versa. Each workspace has its own state file, so a corrupted or rolled-back state in one workspace cannot cascade into the other.
 
-### **2.3. Different Permission Boundaries**
+### **3.3. Different Permission Boundaries**
 Private connectivity provisioning requires elevated AWS permissions (creating VPC endpoints, modifying route tables, managing private hosted zones) and Confluent Cloud permissions (accepting private connectivity connections on enterprise clusters). Application resources require only Confluent Cloud service-account-level permissions and limited AWS access for Secrets Manager. Splitting the workspaces allows tighter IAM scoping, the application workspace's Terraform Cloud agent needs only `secretsmanager:*` on a narrow path, not broad VPC/EC2 permissions.
 
-### **2.4. Team Ownership Alignment**
+### **3.4. Team Ownership Alignment**
 In many organizations, a platform or network engineering team owns the private connectivity setup, while application or data engineering teams own the Kafka resources layered on top. Separate workspaces map cleanly to separate code repositories, PR review cycles, and on-call responsibilities.
 
-### **2.5. Dependency Ordering Without Tight Coupling**
+### **3.5. Dependency Ordering Without Tight Coupling**
 This workspace references the already-provisioned clusters by their IDs (passed in as input variables). It does not create the clusters or their private connectivity connections, it simply consumes them as data sources. This loose coupling means the private connectivity workspace can be applied first (and independently validated) before this workspace is ever initialized.
 
-## **3.0 What This Workspace Provisions**
+## **4.0 What This Workspace Provisions**
 | Layer | Resources |
 |-------|-----------|
-| **Sandbox Kafka Cluster** | Service accounts (`app_manager`, `app_producer`, `app_consumer`, `app_connector`), role bindings, ACLs, the `dev-stock_trades` topic, a DataGen Source connector, and rotating API key pairs for each service account |
+| **Sandbox Kafka Cluster** | Service accounts (`app_manager`, `app_producer`, `app_consumer`, `app_connector`), role bindings, ACLs, the `dev.stock_trades` topic, a DataGen Source connector, and rotating API key pairs for each service account |
 | **Shared Kafka Cluster** | Service accounts (`app_manager`, `app_consumer`), role bindings, ACLs, and rotating API key pairs |
-| **Cluster Linking** | A bidirectional cluster link between Sandbox and Shared, plus a mirror topic (`dev-stock_trades`) on the Shared cluster |
+| **Cluster Linking** | A bidirectional cluster link between Sandbox and Shared, plus a mirror topic (`dev.stock_trades`) on the Shared cluster |
 | **Schema Registry** | Service account, DeveloperRead/DeveloperWrite role bindings on all subjects, and a rotating API key pair |
 | **AWS Secrets Manager** | Six secrets storing JAAS credentials and bootstrap server URIs for Java Kafka clients |
 | **Terraform Cloud** | Workspace configuration to run on a TFC agent pool (`signalroom-iac-tfc-agents-pool`) |
 
-## **4.0 Let's Get Started**
+## **5.0 Let's Get Started**
 
-### **4.1 Deploy the Infrastructure**
+### **5.1 Deploy the Infrastructure**
 The deploy.sh script handles authentication and Terraform execution: 
 
 ```bash
@@ -210,6 +168,7 @@ The deploy.sh script handles authentication and Terraform execution:
                    --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> \
                    --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> \
                    --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID> \
+                   [--confluent-access-code-id=<CONFLUENT_ACCESS_CODE_ID>] \
                    [--day-count=<DAY_COUNT>]
 ```
 
@@ -224,32 +183,12 @@ Here's the argument table for `deploy.sh create` command:
 | `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
 | `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
 | `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
+| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
 | `--day-count` | ❌ | API key rotation interval in days. Exported as `TF_VAR_day_count`. |
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
 
-#### **4.1.1 Cluster Linking Error**
-
-```bash
-╷
-│ Error: error creating Cluster Link: 400 Bad Request: A cluster link already exists with the provided link name: Cluster Link Wvz-HzlFQhG5D-FbPb7w9w already exists.
-│ 
-│   with confluent_cluster_link.shared_to_sandbox,
-│   on setup-confluent-cluster_linking.tf line 133, in resource "confluent_cluster_link" "shared_to_sandbox":
-│  133: resource "confluent_cluster_link" "shared_to_sandbox" {
-│ 
-╵
-```
-
-If you see the above error, it indicates that the previous failed attempt left the cluster link in place. To resolve, delete the existing cluster link via the Confluent CLI:
-
-```bash
-confluent kafka link delete bidirectional_between_sandbox_and_shared --cluster <CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> --environment <CONFLUENT_ENVIRONMENT_ID> --force
-```
-
-Then re-run the `./deploy.sh create` command.
-
-### **4.2 Teardown the Infrastructure**
+### **5.2 Teardown the Infrastructure**
 ```bash
 ./deploy.sh destroy --profile=<SSO_PROFILE_NAME> \
                     --confluent-api-key=<CONFLUENT_API_KEY> \
@@ -271,19 +210,21 @@ Here's the argument table for `deploy.sh destroy` command:
 | `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
 | `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
 | `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
+| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
 
-## **5.0 Resources**
+## **6.0 Resources**
 
-### **5.1 Terminology**
+### **6.1 Terminology**
 - **ACL**: Access Control List - A list of permissions attached to an object that specifies which users or system processes can access the object and what operations they can perform.
 - **AWS**: Amazon Web Services - A comprehensive cloud computing platform provided by Amazon.
 - **CC**: Confluent Cloud - A fully managed event streaming platform based on Apache Kafka.
 - **IaC**: Infrastructure as Code - The practice of managing and provisioning computing infrastructure through machine-readable definition files.
 - **JAAS**: Java Authentication and Authorization Service - A Java security framework for user authentication and authorization.
+- **PNI**: Private Network Interface - A method of connecting to Confluent Cloud that provides private connectivity without traversing the public internet.
 - **TFC**: Terraform Cloud - A service that provides infrastructure automation using Terraform.
 - **VPC**: Virtual Private Cloud - A virtual network dedicated to your AWS account.
 
-### **5.2 Related Documentation**
+### **6.2 Related Documentation**
 - [Geo-replication with Cluster Linking on Confluent Cloud](https://docs.confluent.io/cloud/current/multi-cloud/cluster-linking/index.html#geo-replication-with-cluster-linking-on-ccloud)
