@@ -125,8 +125,8 @@ flowchart TB
 ## **3.0 Why the Private Connectivity Configuration Lives in a Separate Workspace**
 The two types of AWS private connectivity networking infrastructure are intentionally managed in separate Terraform Cloud workspaces:
 
-- [`iac-cc-aws-privatelink-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws-privatelink-infrastructure-networking-example)
-- [`iac-cc-aws-pni-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws-pni-infrastructure-networking-example)
+- [`iac-cc-aws-privatelink-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws_privatelink-infrastructure_networking-example)
+- [`iac-cc-aws-pni-infrastructure-networking-example`](https://github.com/j3-signalroom/iac-cc-aws_pni-infrastructure_networking-example)
     
 These are separated from this application-resources workspace (`iac-cc-app-resources-example`). There are several important reasons for this separation:
 
