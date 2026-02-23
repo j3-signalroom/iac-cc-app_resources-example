@@ -168,7 +168,7 @@ The deploy.sh script handles authentication and Terraform execution:
                    --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID> \
                    --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> \
                    --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID> \
-                   [--confluent-access-code-id=<CONFLUENT_ACCESS_CODE_ID>] \
+                   [--confluent-access-code-id=<confluent_pni_access_code_id>] \
                    [--day-count=<DAY_COUNT>]
 ```
 
@@ -183,7 +183,7 @@ Here's the argument table for `deploy.sh create` command:
 | `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
 | `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
 | `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
-| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
+| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_pni_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
 | `--day-count` | ❌ | API key rotation interval in days. Exported as `TF_VAR_day_count`. |
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
@@ -210,7 +210,7 @@ Here's the argument table for `deploy.sh destroy` command:
 | `--confluent-environment-id` | ✅ | Confluent Cloud environment ID where the clusters are provisioned. Exported as `TF_VAR_confluent_environment_id` for Terraform. | |
 | `--confluent-sandbox-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Sandbox (source) cluster. Exported as `TF_VAR_confluent_sandbox_kafka_cluster_id` for Terraform. |
 | `--confluent-shared-kafka-cluster-id` | ✅ | Confluent Cloud Kafka cluster ID for the Shared (destination) cluster. Exported as `TF_VAR_confluent_shared_kafka_cluster_id` for Terraform. |
-| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
+| `--confluent-access-code-id` | ❌ | Confluent Cloud access code ID. Exported as `TF_VAR_confluent_pni_access_code_id` for Terraform. _This is required only if you're using the Confluent Private Network Interface (PNI) for private network connectivity to the Confluent Cloud environment._ |
 
 > All 7 arguments are required — the script exits with code `85` if any are missing.
 

@@ -27,8 +27,20 @@ variable "confluent_shared_kafka_cluster_id" {
   type        = string
 }
 
-variable "confluent_access_code_id" {
+variable "confluent_pni_access_code_id" {
   description = "The Confluent Cloud Access Code ID associated with the Confluent Cloud Kafka Cluster.  This variable is optional and only required if Confluent PNI is used for private networking."
+  type        = string
+  default     = ""
+}
+
+variable "confluent_sandbox_access_code_id" {
+  description = "The Confluent Cloud Access Code ID associated with the Confluent Cloud Sandbox Kafka Cluster.  This variable is optional and only required if Confluent PNI is used for private networking."
+  type        = string
+  default     = ""
+}
+
+variable "confluent_shared_access_code_id" {
+  description = "The Confluent Cloud Access Code ID associated with the Confluent Cloud Shared Kafka Cluster.  This variable is optional and only required if Confluent PNI is used for private networking."
   type        = string
   default     = ""
 }

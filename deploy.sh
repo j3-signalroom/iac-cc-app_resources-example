@@ -12,7 +12,9 @@
 #                                --confluent-environment-id=<CONFLUENT_ENVIRONMENT_ID>
 #                                --confluent-sandbox-kafka-cluster-id=<CONFLUENT_SANDBOX_KAFKA_CLUSTER_ID> \
 #                                --confluent-shared-kafka-cluster-id=<CONFLUENT_SHARED_KAFKA_CLUSTER_ID> \
-#                                [--confluent-access-code-id=<CONFLUENT_ACCESS_CODE_ID>] \
+#                                [--confluent-pni-access-code-id=<CONFLUENT_PNI_ACCESS_CODE_ID>] \
+#                                [--confluent-sandbox-access-code-id=<CONFLUENT_SANDBOX_ACCESS_CODE_ID>] \
+#                                [--confluent-shared-access-code-id=<CONFLUENT_SHARED_ACCESS_CODE_ID>] \
 #                                [--day-count=<DAY_COUNT>]
 #
 #
@@ -76,7 +78,9 @@ tfe_token=""
 confluent_environment_id=""
 confluent_sandbox_kafka_cluster_id=""
 confluent_shared_kafka_cluster_id=""
-confluent_access_code_id=""
+confluent_pni_access_code_id=""
+confluent_sandbox_access_code_id=""
+confluent_shared_access_code_id=""
 
 # Default optional variable(s)
 day_count=30
@@ -110,9 +114,15 @@ do
         *"--confluent-shared-kafka-cluster-id="*)
             arg_length=36
             confluent_shared_kafka_cluster_id=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
-        *"--confluent-access-code-id="*)
-            arg_length=27
-            confluent_access_code_id=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
+        *"--confluent-pni-access-code-id="*)
+            arg_length=31
+            confluent_pni_access_code_id=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
+        *"--confluent-sandbox-access-code-id="*)
+            arg_length=35
+            confluent_sandbox_access_code_id=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
+        *"--confluent-shared-access-code-id="*)
+            arg_length=34
+            confluent_shared_access_code_id=${arg:$arg_length:$(expr ${#arg} - $arg_length)};;
         *)
             echo
             print_error "(Error Message 002)  You included an invalid argument: $arg"
@@ -229,7 +239,9 @@ deploy_infrastructure() {
     # \nconfluent_environment_id=\"${confluent_environment_id}\"\
     # \nconfluent_sandbox_kafka_cluster_id=\"${confluent_sandbox_kafka_cluster_id}\"\
     # \nconfluent_shared_kafka_cluster_id=\"${confluent_shared_kafka_cluster_id}\"\
-    # \nconfluent_access_code_id=\"${confluent_access_code_id}\"\
+    # \nconfluent_pni_access_code_id=\"${confluent_pni_access_code_id}\"\
+    # \nconfluent_sandbox_access_code_id=\"${confluent_sandbox_access_code_id}\"\
+    # \nconfluent_shared_access_code_id=\"${confluent_shared_access_code_id}\"\
     # \ntfe_token=\"${tfe_token}\"\
     # \nday_count=${day_count}\" > terraform.tfvars
 
@@ -244,7 +256,9 @@ deploy_infrastructure() {
     export TF_VAR_confluent_environment_id="${confluent_environment_id}"
     export TF_VAR_confluent_sandbox_kafka_cluster_id="${confluent_sandbox_kafka_cluster_id}"
     export TF_VAR_confluent_shared_kafka_cluster_id="${confluent_shared_kafka_cluster_id}"
-    export TF_VAR_confluent_access_code_id="${confluent_access_code_id}"
+    export TF_VAR_confluent_pni_access_code_id="${confluent_pni_access_code_id}"
+    export TF_VAR_confluent_sandbox_access_code_id="${confluent_sandbox_access_code_id}"
+    export TF_VAR_confluent_shared_access_code_id="${confluent_shared_access_code_id}"
     export TF_VAR_tfe_token="${tfe_token}"
     export TF_VAR_day_count="${day_count}"
 
@@ -300,7 +314,9 @@ undeploy_infrastructure() {
     export TF_VAR_confluent_environment_id="${confluent_environment_id}"
     export TF_VAR_confluent_sandbox_kafka_cluster_id="${confluent_sandbox_kafka_cluster_id}"
     export TF_VAR_confluent_shared_kafka_cluster_id="${confluent_shared_kafka_cluster_id}"
-    export TF_VAR_confluent_access_code_id="${confluent_access_code_id}"
+    export TF_VAR_confluent_sandbox_access_code_id="${confluent_sandbox_access_code_id}"
+    export TF_VAR_confluent_shared_access_code_id="${confluent_shared_access_code_id}"
+    export TF_VAR_confluent_pni_access_code_id="${confluent_pni_access_code_id}"
     export TF_VAR_tfe_token="${tfe_token}"
     export TF_VAR_day_count="${day_count}"
 
