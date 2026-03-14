@@ -7,6 +7,7 @@ The format is base on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), 
 ## [0.06.00.000] - 2026-03-14
 ### Added
 - Issue [`#41`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/41)
+- Issue [`#42`](https://github.com/signalroom/signalroom-iac-aws-client-vpn-tgw/issues/42)
 
 ## [0.05.00.000] - 2026-03-04
 ### Added
